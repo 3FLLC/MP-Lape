@@ -8,6 +8,8 @@
 
 {.$DEFINE Lape_CaseSensitive}            //Case sentive in script
 {.$DEFINE Lape_CDECL}                    //CDECL function headers for callbacks/evaluations (useful for plugins/ffi)
+//compile time Lape_InitExternalFuncResult became a run-time option: lcoInitExternalResult
+//                                       // Ensure an empty result variable for external functions (useful for plugins)
 {$DEFINE Lape_DoubleKeywordsCache}      //Create a double cache for keywords to speed up parsing (more memory, faster)
 {$DEFINE Lape_EmitPos}                  //Emit source position when compiling (more memory)
 {$DEFINE Lape_Inline}                   //Compile with function inlining where it could be benefitial (faster, harder debugging)
