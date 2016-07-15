@@ -598,12 +598,12 @@ const
     '=', '>', '>=', '<', '<=', '<>', '@', 'and', ':=', '/=', '-=', '*=', '+=',
     '^', 'div', '/', '.' , 'in', 'is', '[', '-', 'mod', '*', 'not', 'or', '+',
     '**', 'shl', 'shr', 'xor', '-', '+'
-  );
+  ); // lpdisassble.pas
   op_name: array[EOperator] of lpString = ('',
     'EQ', 'GT', 'GTEQ', 'LT', 'LTEQ', 'NEQ', 'ADDR', 'AND', 'ASGN', 'DIVASGN', 'SUBASGN', 'MULASGN', 'ADDASGN',
     'DEREF', 'IDIV', 'DIV', 'DOT', 'IN', 'IS', 'IDX', 'SUB', 'MOD', 'MUL', 'NOT', 'OR', 'ADD',
     'POW', 'SHL', 'SHR', 'XOR', 'UMIN', 'UPOS'
-  );
+  ); // lpdisassble.pas
 
 var
   lowUInt8: UInt8 = Low(UInt8);    highUInt8: UInt8 = High(UInt8);
