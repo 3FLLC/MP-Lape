@@ -4,6 +4,8 @@
   License: GNU Lesser GPL (http://www.gnu.org/licenses/lgpl.html)
 
   Bytecode emitter.
+  // this unit has extensive use of SizeOf() This isn't really a RTL function.
+  // Its result is calculated at compile-time, and hard-coded in the executable. 
 }
 unit lpcodeemitter;
 
