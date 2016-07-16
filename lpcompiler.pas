@@ -274,10 +274,17 @@ type
 implementation
 
 uses
+{$IFDEF MODERNPASCAL}
+  dxutil_environment, dxutil_string, Crt, Math, DynLibs,
+{$ENDIF}
   Variants,
   {$IFDEF Lape_NeedAnsiStringsUnit}AnsiStrings,{$ENDIF}
   lpvartypes_ord, lpvartypes_record, lpvartypes_array,
   lpexceptions, lpeval, lpinterpreter;
+
+{$IFDEF MODERNPASCAL}
+   {$I mp/lpcompiler.003}
+{$ENDIF}
 
 function TLapeCompiler.getPDocPos: PDocPos;
 begin
