@@ -291,14 +291,14 @@ function TLapeCompiler.incTokenizerLock(ATokenizer: TLapeTokenizerBase): TLapeTo
 begin
   Result := ATokenizer;
   if (Result <> nil) then
-    Inc(Result.Tag);
+    InterLockedIncrement(Result.Tag);
 end;
 
 procedure TLapeCompiler.decTokenizerLock(var ATokenizer: TLapeTokenizerBase; DoFree: Boolean = True);
 begin
   if (ATokenizer <> nil) then
   begin
-    Dec(ATokenizer.Tag);
+    InterLockedDecrement(ATokenizer.Tag);
     if (ATokenizer.Tag < 0) and DoFree then
       FreeAndNil(ATokenizer);
   end;
@@ -412,7 +412,7 @@ var
   InPeek: Boolean;
 begin
   InPeek := (Tokenizer <> nil) and Tokenizer.InPeek;
-  Inc(FTokenizer);
+  InterLockedIncrement(FTokenizer);
   setTokenizer(ATokenizer);
 
   if InPeek and (ATokenizer <> nil) then
@@ -430,7 +430,7 @@ begin
     LastTok := tk_NULL;
 
   setTokenizer(nil);
-  Dec(FTokenizer);
+  InterLockedDecrement(FTokenizer);
 
   if (Tokenizer <> nil) then
     __LapeTokenizerBase(Tokenizer).FLastTok := LastTok;
@@ -484,7 +484,7 @@ end;
 procedure TLapeCompiler.SetUniqueTypeID(Typ: TLapeType);
 begin
   Typ.TypeID := FTypeID;
-  Inc(FTypeID);
+  InterLockedIncrement(FTypeID);
 end;
 
 function TLapeCompiler.GetDisposeMethod(Sender: TLapeType_OverloadedMethod; AType: TLapeType_Method; AParams: TLapeTypeArray = nil; AResult: TLapeType = nil): TLapeGlobalVar;
@@ -1026,7 +1026,7 @@ begin
       if (IncludeFile = '') then
         LapeExceptionFmt(lpeFileNotFound, [Argument], Sender.DocPos);
     end;
-    IncludeFile := ExpandFileName(IncludeFile);
+    IncludeFile := ExpandFileName(IncludeFile);  // FPC's ExpandFileName has a memory leak!
 
     if (Directive = 'include_once') and (FIncludes.IndexOf(string(IncludeFile)) > -1) then
       Exit(True)
@@ -1103,7 +1103,7 @@ begin
     if (Result = tk_NULL) and hasMoreTokenizers() then
     begin
       if Tokenizer.InPeek then
-        Dec(FTokenizer)
+        InterLockedDecrement(FTokenizer)
       else
         popTokenizer();
       Result := Tokenizer.Next{NoWhiteSpace}();
@@ -1475,7 +1475,7 @@ var
         Param.ParType := lptVar;
 
       AMethod.Params.Insert(Param, i);
-      Inc(AMethod.ImplicitParams);
+      InterLockedIncrement(AMethod.ImplicitParams);
 
       if addToScope then
       begin
@@ -2676,7 +2676,7 @@ begin
             else
             begin
               PushOpStack(TLapeTree_Operator(ParenthesisOpen));
-              Inc(InExpr);
+              InterLockedIncrement(InExpr);
             end;
           end;
         tk_sym_ParenthesisClose:
@@ -2685,7 +2685,7 @@ begin
               PopOpNode();
             if (OpStack.Cur < 0) or (OpStack.Pop() <> TLapeTree_Operator(ParenthesisOpen)) then
               LapeException(lpeLostClosingParenthesis, Tokenizer.DocPos);
-            Dec(InExpr);
+            InterLockedDecrement(InExpr);
           end;
 
         {$IFDEF Lape_PascalLabels}
@@ -2838,7 +2838,7 @@ begin
       then
       begin
         PtrUInt(Statement) := 1; //Ensure another iteration
-        Inc(Recover);
+        InterLockedIncrement(Recover);
       end;
     until (Statement = nil) or (Recover > 10);
 
@@ -3094,7 +3094,7 @@ begin
       if (Tokenizer.Tok in [tk_kw_With, tk_sym_Comma]) then
       begin
         FStackInfo.addWith(Result.addWith(ParseExpression([tk_sym_Comma])));
-        Inc(Count);
+        InterLockedIncrement(Count);
       end
       else
       begin
