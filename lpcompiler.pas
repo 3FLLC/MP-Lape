@@ -59,6 +59,10 @@ type
     OldState: Pointer;
   end;
 
+{$IFDEF MODERNPASCAL}
+   {$I mp/lpcompiler.001}
+{$ENDIF}
+
   TLapeCompiler = class(TLapeCompilerBase)
   private
     __tmp: TDocPos;
@@ -156,6 +160,10 @@ type
   public
     FreeTokenizer: Boolean;
     FreeTree: Boolean;
+
+{$IFDEF MODERNPASCAL}
+   {$I mp/lpcompiler.002}
+{$ENDIF}
 
     constructor Create(
       ATokenizer: TLapeTokenizerBase; ManageTokenizer: Boolean = True;
