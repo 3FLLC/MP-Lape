@@ -7,7 +7,7 @@
 }
 unit lpeval;
 
-{$I lape.inc}
+{$I includes/lape.inc}
 
 interface
 
@@ -33,11 +33,14 @@ procedure _LapeAssertMsg(const Params: PParamArray); {$IFDEF Lape_CDECL}cdecl;{$
 procedure _LapeRangeCheck(const Params: PParamArray); {$IFDEF Lape_CDECL}cdecl;{$ENDIF}
 
 procedure _LapeGetMem(const Params: PParamArray; const Result: Pointer); {$IFDEF Lape_CDECL}cdecl;{$ENDIF}
+procedure _LapeGetMem2(const Params: PParamArray); {$IFDEF Lape_CDECL}cdecl;{$ENDIF}
 procedure _LapeAllocMem(const Params: PParamArray; const Result: Pointer); {$IFDEF Lape_CDECL}cdecl;{$ENDIF}
 procedure _LapeFreeMem(const Params: PParamArray); {$IFDEF Lape_CDECL}cdecl;{$ENDIF}
+procedure _LapeFreeMem2(const Params: PParamArray); {$IFDEF Lape_CDECL}cdecl;{$ENDIF}
 procedure _LapeReallocMem(const Params: PParamArray); {$IFDEF Lape_CDECL}cdecl;{$ENDIF}
 
 procedure _LapeFillMem(const Params: PParamArray); {$IFDEF Lape_CDECL}cdecl;{$ENDIF}
+procedure _LapeFillMem2(const Params: PParamArray); {$IFDEF Lape_CDECL}cdecl;{$ENDIF}
 procedure _LapeMove(const Params: PParamArray); {$IFDEF Lape_CDECL}cdecl;{$ENDIF}
 procedure _LapeCompareMem(const Params: PParamArray; const Result: Pointer); {$IFDEF Lape_CDECL}cdecl;{$ENDIF}
 
@@ -92,10 +95,10 @@ procedure _LapeToString_UnicodeString(const Params: PParamArray; const Result: P
 procedure _LapeToString_Variant(const Params: PParamArray; const Result: Pointer); {$IFDEF Lape_CDECL}cdecl;{$ENDIF}
 procedure _LapeToString_Pointer(const Params: PParamArray; const Result: Pointer); {$IFDEF Lape_CDECL}cdecl;{$ENDIF}
 
-{$I lpeval_headers_math.inc}
-{$I lpeval_headers_string.inc}
-{$I lpeval_headers_datetime.inc}
-{$I lpeval_headers_variant.inc}
+{$I includes/lpeval_headers_math.inc}
+{$I includes/lpeval_headers_string.inc}
+{$I includes/lpeval_headers_datetime.inc}
+{$I includes/lpeval_headers_variant.inc}
 
 procedure ClearToStrArr(var Arr: TLapeToStrArr);
 procedure LoadToStrArr(var Arr: TLapeToStrArr);
@@ -396,14 +399,14 @@ implementation
 uses
   Variants, Math,
   {$IFDEF Lape_NeedAnsiStringsUnit}AnsiStrings,{$ENDIF}
-  {$IFDEF FPC}LCLIntf,{$ELSE}{$IFDEF MSWINDOWS}Windows,{$ENDIF}{$ENDIF}
+  {$IFDEF FPC2}LCLIntf,{$ELSE}{$IFDEF MSWINDOWS}Windows,{$ENDIF}{$ENDIF}
   lpexceptions, lpparser;
 
 {$RangeChecks Off}
 {$OverflowChecks Off}
 
 type
-  PBoolean = ^Boolean; //Make sure it's not ^Byte
+  PBoolean = ^Boolean; //Make sure it is not ^Byte
 
 procedure _LapeWrite(const Params: PParamArray); {$IFDEF Lape_CDECL}cdecl;{$ENDIF}
 begin
@@ -453,6 +456,16 @@ begin
   GetMem(PPointer(Result)^, PSizeInt(Params^[0])^);
 end;
 
+procedure _LapeGetMem2(const Params:PParamArray);inline;
+begin
+  GetMem(PPointer(Params^[0])^,PInt32(Params^[1])^);
+end;
+
+procedure _LapeFreeMem2(const Params:PParamArray);inline;
+begin
+  FreeMem(PPointer(Params^[0])^,PInt32(Params^[1])^);
+end;
+
 procedure _LapeAllocMem(const Params: PParamArray; const Result: Pointer); {$IFDEF Lape_CDECL}cdecl;{$ENDIF}
 begin
   PPointer(Result)^ := AllocMem(PSizeInt(Params^[0])^);
@@ -471,6 +484,11 @@ end;
 procedure _LapeFillMem(const Params: PParamArray); {$IFDEF Lape_CDECL}cdecl;{$ENDIF}
 begin
   FillChar(Params^[0]^, PSizeInt(Params^[1])^, PUInt8(Params^[2])^);
+end;
+
+procedure _LapeFillMem2(const Params:PParamArray);inline;
+begin
+  FillChar(Params^[0]^,PInt32(Params^[1])^,PChar(Params^[2])^);
 end;
 
 procedure _LapeMove(const Params: PParamArray); {$IFDEF Lape_CDECL}cdecl;{$ENDIF}
@@ -743,10 +761,10 @@ type
   TVariantArray = array of Variant;
   PVariantArray = ^TVariantArray;
 
-{$I lpeval_wrappers_math.inc}
-{$I lpeval_wrappers_string.inc}
-{$I lpeval_wrappers_datetime.inc}
-{$I lpeval_wrappers_variant.inc}
+{$I includes/lpeval_wrappers_math.inc}
+{$I includes/lpeval_wrappers_string.inc}
+{$I includes/lpeval_wrappers_datetime.inc}
+{$I includes/lpeval_wrappers_variant.inc}
 
 procedure ClearToStrArr(var Arr: TLapeToStrArr);
 var
@@ -823,17 +841,17 @@ end;
 
 procedure LoadEvalRes(var Arr: TLapeEvalRes);
 begin
-  {$I lpeval_res.inc}
+  {$I includes/lpeval_res.inc}
 end;
 
-{$WARN COMPARING_SIGNED_UNSIGNED OFF}
-{$WARN IMPLICIT_STRING_CAST OFF}
-{$WARN IMPLICIT_STRING_CAST_LOSS OFF}
-{$I lpeval_functions.inc}
+{.$WARN COMPARING_SIGNED_UNSIGNED OFF}
+{.$WARN IMPLICIT_STRING_CAST OFF}
+{.$WARN IMPLICIT_STRING_CAST_LOSS OFF}
+{$I includes/lpeval_functions.inc}
 
 procedure LoadEvalArr(var Arr: TLapeEvalArr);
 begin
-  {$I lpeval_arr.inc}
+  {$I includes/lpeval_arr.inc}
 end;
 
 procedure lpeAddr(const Dest, Left, Right: Pointer); {$IFDEF Lape_CDECL}cdecl;{$ENDIF}
@@ -879,6 +897,3 @@ finalization
   ClearEvalArr(LapeEvalArr);
   
 end.
-
-
-
