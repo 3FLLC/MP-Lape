@@ -7,12 +7,33 @@
 }
 unit lptypes;
 
-{$I lape.inc}
+{$I includes/lape.inc}
 
 interface
 
 uses
   Classes, SysUtils;
+
+type // was in LPVARTYPES Ozz
+  ECompilerOption = (
+    lcoAssertions,                     // {$C} {$ASSERTIONS}
+    lcoRangeCheck,                     // {$R} {$RANGECHECKS}      TODO
+    lcoShortCircuit,                   // {$B} {$BOOLEVAL}
+    lcoAlwaysInitialize,               // {$M} {$MEMORYINIT}
+    lcoFullDisposal,                   // {$D} {$FULLDISPOSAL}
+    lcoLooseSemicolon,                 // {$L} {$LOOSESEMICOLON}
+    lcoLooseSyntax,                    // {$X} {$EXTENDEDSYNTAX}
+    lcoAutoInvoke,                     // {$F} {$AUTOINVOKE}
+    lcoAutoProperties,                 // {$P} {$AUTOPROPERTIES}
+    lcoScopedEnums,                    // {$S} {$SCOPEDENUMS}
+    lcoConstAddress,                   // {$J} {$CONSTADDRESS}
+    lcoContinueCase,                   //      {$CONTINUECASE}
+    lcoCOperators,                     //      {$COPERATORS}
+    lcoExtendedSyntax,                 //      {$EXTENDEDSYNTAX}
+    lcoInitExternalResult              // Ensure empty result for external calls (useful for ffi)
+  );
+  ECompilerOptionsSet = set of ECompilerOption;
+  PCompilerOptionsSet = ^ECompilerOptionsSet;
 
 const
   LapeCaseSensitive = {$IFDEF Lape_CaseSensitive}True{$ELSE}False{$ENDIF};
@@ -89,10 +110,15 @@ type
     VarRecs: TVarRecArray;
   end;
 
+  TDynByteArray = array of Byte;
+  PDynByteArray =^TDynByteArray;
+  TDynWordArray = array of Word;
+  PDynWordArray =^TDynWordArray;
+  PStringArray =^TStringArray;
   TStringArray = array of lpString;
   TByteArray = array of Byte;
   TIntegerArray = array of Integer;
-  TInitBool = (bUnknown, bFalse, bTrue);
+  TInitBool = (bUnknown, bFalse, bTrue{$IFDEF MODERNPASCAL},bChain{$ENDIF});
 
   TCodeArray = TByteArray;
   PCodeArray = ^TCodeArray;
@@ -598,12 +624,12 @@ const
     '=', '>', '>=', '<', '<=', '<>', '@', 'and', ':=', '/=', '-=', '*=', '+=',
     '^', 'div', '/', '.' , 'in', 'is', '[', '-', 'mod', '*', 'not', 'or', '+',
     '**', 'shl', 'shr', 'xor', '-', '+'
-  ); // lpdisassble.pas
+  );
   op_name: array[EOperator] of lpString = ('',
     'EQ', 'GT', 'GTEQ', 'LT', 'LTEQ', 'NEQ', 'ADDR', 'AND', 'ASGN', 'DIVASGN', 'SUBASGN', 'MULASGN', 'ADDASGN',
     'DEREF', 'IDIV', 'DIV', 'DOT', 'IN', 'IS', 'IDX', 'SUB', 'MOD', 'MUL', 'NOT', 'OR', 'ADD',
     'POW', 'SHL', 'SHR', 'XOR', 'UMIN', 'UPOS'
-  ); // lpdisassble.pas
+  );
 
 var
   lowUInt8: UInt8 = Low(UInt8);    highUInt8: UInt8 = High(UInt8);
@@ -1856,10 +1882,10 @@ begin
 end;
 
 procedure TLapeNotifier{$IFNDEF FPC}<_T>{$ENDIF}.DeleteProc(const Proc: TNotifyProc);
-var
-  p: TNotifyProc;
+{$IFNDEF FPC}var
+  p: TNotifyProc;{$ENDIF}
 begin
-  p := FNotifiers.DeleteItem(Proc); //Assign to p to work around Delphi compiler bug
+  {$IFNDEF FPC}p :={$ENDIF} FNotifiers.DeleteItem(Proc); //Assign to p to work around Delphi compiler bug
 end;
 
 procedure TLapeNotifier{$IFNDEF FPC}<_T>{$ENDIF}.Notify(Sender: _T);
@@ -2243,9 +2269,10 @@ end;
 {$IFDEF Lape_TrackObjects}
 initialization
   lpgList := TList.Create();
+  lpgCounter:=0;
+//  System.Writeln('Lape_TrackObjects Enabled.');
 finalization
   lpgList.Free();
 {$ENDIF}
 
 end.
-
