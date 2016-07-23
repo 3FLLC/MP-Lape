@@ -7,13 +7,18 @@
 }
 unit lpparser;
 
-{$I lape.inc}
+{$I includes/lape.inc}
 
 interface
 
 uses
   Classes, SysUtils,
   lptypes;
+
+{$IFDEF MODERNPASCAL}
+var
+  GlobalCriticalSection:TRTLCriticalSection; // GLock/GUnlock for Celerity and CodeRunner servers only
+{$ENDIF}
 
 type
   EParserToken = (
@@ -43,6 +48,7 @@ type
     tk_kw_Forward,
     tk_kw_Function,
     tk_kw_If,
+    tk_kw_Inline, // Ozz
     {$IFDEF Lape_PascalLabels}tk_kw_Label,{$ENDIF}
     tk_kw_Of,
     tk_kw_Object,
@@ -52,18 +58,20 @@ type
     tk_kw_Override,
     tk_kw_Packed,
     tk_kw_Private,
-    tk_kw_Procedure,
+    tk_kw_Procedure, // longest keyword 9 for Ozz IsKeyword
     tk_kw_Program,
     tk_kw_Record,
     tk_kw_Repeat,
     tk_kw_Set,
     tk_kw_Static,
+    tk_kw_Step, // Ozz
     tk_kw_Then,
     tk_kw_To,
     tk_kw_Try,
     tk_kw_Type,
     tk_kw_Union,
     tk_kw_Until,
+    tk_kw_Uses, // Ozz
     tk_kw_Var,
     tk_kw_While,
     tk_kw_With,
@@ -118,6 +126,7 @@ type
     //Types
     tk_typ_Float,
     tk_typ_Integer,
+    tk_typ_Integer_Oct,
     tk_typ_Integer_Hex,
     tk_typ_Integer_Bin,
     tk_typ_String,
@@ -147,6 +156,7 @@ type
     FDocPos: TDocPos;
     FLen: Integer;
     FInPeek: Boolean;
+    FOptions:ECompilerOptionsSet; // Ozz
 
     FOnParseDirective: TLapeParseDirective;
     FOnHandleDirective: TLapeHandleDirective;
@@ -203,6 +213,7 @@ type
   published
     property OnParseDirective: TLapeParseDirective read FOnParseDirective write FOnParseDirective;
     property OnHandleDirective: TLapeHandleDirective read FOnHandleDirective write FOnHandleDirective;
+    property Options:ECompilerOptionsSet read FOptions write FOptions; // Ozz
   end;
 
   TLapeTokenizerString = class(TLapeTokenizerBase)
@@ -223,6 +234,10 @@ type
   public
     constructor Create(AFileName: UnicodeString = ''); reintroduce; overload; virtual;
     constructor Create(AFileName: AnsiString = ''); reintroduce; overload; virtual;
+{$IFDEF MODERNPASCAL}
+  published
+    property Doc;
+{$ENDIF}
   end;
 
   TLapeKeyword = record
@@ -246,7 +261,7 @@ const
   ParserToken_Symbols = [tk_sym_BracketClose..tk_sym_SemiColon];
   ParserToken_Types = [tk_typ_Float..tk_typ_Char];
 
-  Lape_Keywords: array[0..48 {$IFDEF Lape_PascalLabels}+1{$ENDIF}] of TLapeKeyword = (
+  Lape_Keywords: array[0..52 {$IFDEF Lape_PascalLabels}+1{$ENDIF}] of TLapeKeyword = ( // Ozz
       (Keyword: 'AND';          Token: tk_op_AND),
       (Keyword: 'DIV';          Token: tk_op_DIV),
       (Keyword: 'IN';           Token: tk_op_IN),
@@ -261,6 +276,7 @@ const
       (Keyword: 'ARRAY';        Token: tk_kw_Array),
       (Keyword: 'BEGIN';        Token: tk_kw_Begin),
       (Keyword: 'CASE';         Token: tk_kw_Case),
+      (Keyword: 'CLASS';        Token: tk_kw_Record), // Ozz
       (Keyword: 'CONST';        Token: tk_kw_Const),
       (Keyword: 'CONSTREF';     Token: tk_kw_ConstRef),
       (Keyword: 'DO';           Token: tk_kw_Do),
@@ -274,9 +290,11 @@ const
       (Keyword: 'FORWARD';      Token: tk_kw_Forward),
       (Keyword: 'FUNCTION';     Token: tk_kw_Function),
       (Keyword: 'IF';           Token: tk_kw_If),
+      (Keyword: 'INLINE';       Token: tk_kw_Inline), // Ozz
       {$IFDEF Lape_PascalLabels}
       (Keyword: 'LABEL';        Token: tk_kw_Label),
       {$ENDIF}
+
       (Keyword: 'OBJECT';       Token: tk_kw_Object),
       (Keyword: 'OPERATOR';     Token: tk_kw_Operator),
       (Keyword: 'OF';           Token: tk_kw_Of),
@@ -291,12 +309,14 @@ const
       (Keyword: 'REPEAT';       Token: tk_kw_Repeat),
       (Keyword: 'SET';          Token: tk_kw_Set),
       (Keyword: 'STATIC';       Token: tk_kw_Static),
+      (Keyword: 'STEP';         Token: tk_kw_Step), // Ozz
       (Keyword: 'THEN';         Token: tk_kw_Then),
       (Keyword: 'TO';           Token: tk_kw_To),
       (Keyword: 'TRY';          Token: tk_kw_Try),
       (Keyword: 'TYPE';         Token: tk_kw_Type),
       (Keyword: 'UNION';        Token: tk_kw_Union),
       (Keyword: 'UNTIL';        Token: tk_kw_Until),
+      (Keyword: 'USES';         Token: tk_kw_Uses), // Ozz
       (Keyword: 'VAR';          Token: tk_kw_Var),
       (Keyword: 'WHILE';        Token: tk_kw_While),
       (Keyword: 'WITH';         Token: tk_kw_With)
@@ -381,11 +401,15 @@ const
   );
 
 var
+{$IFDEF NIELSWAY}
   {$IFDEF Lape_DoubleKeywordsCache}
   Lape_KeywordsCache: array[2..10, Byte] of array of TLapeKeyword;
   {$ELSE}
   Lape_KeywordsCache: array[Byte] of array of TLapeKeyword;
   {$ENDIF}
+{$ELSE}
+  Lape_KeywordsCache: array[2..9, Byte] of array of TLapeKeyword;
+{$ENDIF}
 
   {$IF NOT DECLARED(FormatSettings)}
   FormatSettings: TFormatSettings
@@ -422,7 +446,7 @@ uses
   {$IFDEF Lape_NeedAnsiStringsUnit}AnsiStrings,{$ENDIF}
   lpexceptions;
 
-{$WARN WIDECHAR_REDUCED OFF}
+{.$WARN WIDECHAR_REDUCED OFF}
 
 function LapeTokenToString(Token: EParserToken): lpString;
 begin
@@ -662,6 +686,7 @@ begin
   end;
 end;
 
+{$IFDEF NIELSWAY}
 function Lape_HashKeyword(const Str: lpString): Byte;
 var
   i: Integer;
@@ -751,6 +776,75 @@ begin
   end;
   {$ENDIF}
 end;
+{$ELSE} // OZZ WAY:
+function {TLapeTokenizerBase.}Lape_IsKeyword(Str: lpString; out Token: EParserToken): Boolean;
+var
+  Hash: Byte;
+  i: Integer;
+  SLen: Integer;
+
+begin
+   SLen := Length(Str);
+   If (SLen<2) or (SLen>9) then Exit(false);
+   Str:=Uppercase(Str);
+
+   If SLen>4 then begin
+      SLen:=11-SLen;
+      Hash:=(Ord(Str[1]))+((Ord(Str[5])-64)+128);
+    end
+    else begin
+       Hash:=(Ord(Str[1])-64)+((Ord(Str[SLen]))+97);
+    end;
+// based upon my _InitKeywordsCache, this should hit 1st try 99.9% of the time!
+// tests show 10ms to 17ms faster using my design on 20 lines of code
+   for i := 0 to High(Lape_KeywordsCache[SLen][Hash]) do
+      if (Lape_KeywordsCache[SLen][Hash][i].Keyword=Str) then begin
+         Token := Lape_KeywordsCache[SLen][Hash][i].Token;
+         Exit(True);
+      end;
+   Result := False;
+end;
+
+procedure Lape_ClearKeywordsCache;
+var
+  i: Integer;
+  ii: Integer;
+
+begin
+  for i := Low(Lape_KeywordsCache) to High(Lape_KeywordsCache) do
+    for ii := Low(Lape_KeywordsCache[i]) to High(Lape_KeywordsCache[i]) do
+      Lape_KeywordsCache[i][ii] := nil;
+end;
+
+procedure Lape_InitKeywordsCache;
+// my way EXCEPT,PACKED and CONSTREF,EXTERNAL are the only dupes
+// which mean all other keywords hit on first attempt!
+var
+  Hash: Byte;
+  i: Integer;
+  ALen, SLen: Integer;
+
+begin
+  for i := Low(Lape_Keywords) to High(Lape_Keywords) do begin
+    SLen := Length(Lape_Keywords[i].Keyword);
+    If SLen>4 then begin
+       SLen:=11-SLen;
+       Hash:=(Ord(Lape_Keywords[i].Keyword[1]))+((Ord(Lape_Keywords[i].Keyword[5])-64)+128);
+    end
+    else begin
+       Hash:=(Ord(Lape_Keywords[i].Keyword[1])-64)+((Ord(Lape_Keywords[i].Keyword[SLen]))+97);
+    end;
+    ALen := Length(Lape_KeywordsCache[SLen][Hash]);
+    SetLength(Lape_KeywordsCache[SLen][Hash], ALen+1);
+    Lape_KeywordsCache[SLen][Hash][ALen] := Lape_Keywords[i];
+
+//    If ALen>0 then // duplicate hash report it - should always be blank!
+//       System.Writeln('InitKeyWordsCache:'+Lape_Keywords[i].Keyword,' ',Hash,' ',
+//          Lape_KeywordsCache[SLen][Hash][0].KeyWord);
+
+   end;
+end;
+{$ENDIF}
 
 function TLapeTokenizerBase.Identify: EParserToken;
 var
@@ -814,8 +908,15 @@ begin
       end;
 
     //Compare Operators
-    '=': Result := setTok(tk_sym_Equals);
-    '>':
+    '=': if (lcoExtendedSyntax in FOptions) then begin
+            if (getChar(1)='=') then begin
+               Result := setTok(tk_sym_Equals);
+               Inc(FPos);
+            end
+            else Result := setTok(tk_sym_Equals);
+         end
+         else Result := setTok(tk_sym_Equals);
+    '>': // if (lcoExtendedSyntax in FOptions) then support >> SHR
       begin
         if (getChar(1) = '=') then
         begin
@@ -825,7 +926,7 @@ begin
         else
           Result := setTok(tk_cmp_GreaterThan);
       end;
-    '<':
+    '<': // if (lcoExtendedSyntax in FOptions) then support << SHL
       begin
         case getChar(1) of
           '=':
@@ -842,6 +943,14 @@ begin
             Result := setTok(tk_cmp_LessThan);
         end;
       end;
+    '!':if (lcoExtendedSyntax in FOptions) then begin
+           if (getChar(1)='=') then begin
+              Result := setTok(tk_cmp_NotEqual);
+              Inc(FPos);
+           end
+           else Result := setTok(tk_Unkown);
+        end
+        else Result := setTok(tk_Unkown);
 
     //Operators
     ':':
@@ -869,6 +978,12 @@ begin
             Result := setTok(tk_op_AssignDiv);
             Inc(FPos);
           end;
+        '*':begin
+             while (not ((CurChar in ['*', #0]) and (getChar(1) in ['/', #0]))) do
+               NextPos_CountLines();
+             Result := setTok(tk_Comment);
+             if (CurChar = '*') then Inc(FPos);
+          end;
         else
           Result := setTok(tk_op_Divide);
       end;
@@ -881,7 +996,7 @@ begin
         end else 
           Result := setTok(tk_op_Minus);
     
-    {Multiply, Power, AssignMul}      
+    {Multiply, Power, AssignMul, *PowAsgn*} 
     '*':
       case getChar(1) of
         '*':
@@ -929,10 +1044,15 @@ begin
         if (getChar(1) = '*') then
         begin
           Inc(FPos, 2);
-          while (not ((CurChar in ['*', #0]) and (getChar(1) in [')', #0]))) do
-            NextPos_CountLines();
-
-          Result := setTok(tk_Comment);
+          if (CurChar = '$') then begin
+             Result := setTok(tk_Directive);
+             if (not HandleDirective()) then LapeException(lpeUnknownDirective, DocPos);
+          end
+          else begin
+             while (not ((CurChar in ['*', #0]) and (getChar(1) in [')', #0]))) do
+               NextPos_CountLines();
+             Result := setTok(tk_Comment);
+          end;
           if (CurChar = '*') then
             Inc(FPos);
         end
@@ -955,7 +1075,18 @@ begin
           Result := setTok(tk_Comment);
         end;
       end;
+    '|':if (lcoExtendedSyntax in FOptions) then begin // || logical or
+           if (getChar(1)='|') then Result:=setTok(tk_op_OR)
+           else Result:=setTok(tk_Unkown);
+        end
+        else Result:=setTok(tk_Unkown);
+    '&':if (lcoExtendedSyntax in FOptions) then begin // && logical and
+           if (getChar(1)='&') then Result:=setTok(tk_op_AND)
+           else Result:=setTok(tk_op_Plus); // Modula3
+        end
+        else Result:=setTok(tk_Unkown);
 
+{$IFNDEF MODERNPASCAL}
     //Integer and Float
     '0'..'9':
       begin
@@ -987,10 +1118,71 @@ begin
           Result := setTok(tk_typ_Float);
         end;
       end;
+{$ELSE}
+    //Binary, Hexidecimal (C way), Octal, Positive Integer, Float, Exponential
+    '0'..'9':begin
+        if ((getChar(0)='0') and (getChar(1)='b')) then begin // BINARY:
+           Inc(FPos);
+           if (getChar(1) in ['0'..'1']) then begin
+              Inc(FPos);
+              while (getChar(1) in ['0'..'1', '_']) do Inc(FPos);
+              Result := setTok(tk_typ_Integer_Bin);
+           end
+           else Result := setTok(tk_Unkown);
+        end
+        else if ((getChar(0)='0') and (getChar(1)='x')) then begin // HEXADECIMAL:
+           Inc(FPos);
+           if (getChar(1) in ['0'..'9', 'A'..'F', 'a'..'f']) then begin
+              Inc(FPos);
+              while (getChar(1) in ['0'..'9', 'A'..'F', 'a'..'f', '_']) do Inc(FPos);
+              Result := setTok(tk_typ_Integer_Hex);
+           end
+           else Result := setTok(tk_Unkown);
+        end
+        else if ((getChar(0)='0') and (getChar(1)='o')) or
+           ((getChar(0)='0') and (getChar(1)<>'.') and (getChar(1) in ['0'..'8'])) then begin // OCTAL:
+           Inc(FPos);
+           if (getChar(1) in ['0'..'8']) then begin
+              Inc(FPos);
+              while (getChar(1) in ['0'..'8', '_']) do Inc(FPos);
+              Result := setTok(tk_typ_Integer_Oct);
+           end
+           else Result := setTok(tk_Unkown);
+        end
+        else begin
+           Char := getChar(1);
+           while (Char in ['0'..'9', '_']) do begin
+              Inc(FPos);
+              Char := getChar(1);
+           end;
+           if (Char <> '.') or (not (getChar(2) in ['0'..'9'])) then Result := setTok(tk_typ_Integer)
+           else begin
+              Inc(FPos, 2);
+              Char := getChar(1);
+              while (Char in ['0'..'9', '_']) do begin
+                 Inc(FPos);
+                 Char := getChar(1);
+              end;
+              if (Char in ['e', 'E']) and (getChar(2) in ['+','-','0'..'9']) then begin
+                 Inc(FPos, 2);
+                 while (getChar(1) in ['0'..'9', '_']) do Inc(FPos);
+              end
+              else if (Char='&') and (getChar(2)='&') and (getChar(3) in ['0'..'9']) then begin
+                 Inc(FPos, 3);
+                 while (getChar(1) in ['0'..'9', '_']) do Inc(FPos);
+              end
+              else if (Char in ['&']) and (getChar(3) in ['0'..'9']) then begin
+                 Inc(FPos, 2);
+                 while (getChar(1) in ['0'..'9', '_']) do Inc(FPos);
+              end;
+              Result := setTok(tk_typ_Float);
+           end;
+         end;
+      end;
+{$ENDIF}
     '$':
       begin
-        if (getChar(1) in ['0'..'9', 'A'..'F', 'a'..'f']) then
-        begin
+        if (getChar(1) in ['0'..'9', 'A'..'F', 'a'..'f']) then begin
           Inc(FPos);
           while (getChar(1) in ['0'..'9', 'A'..'F', 'a'..'f', '_']) do Inc(FPos);
           Result := setTok(tk_typ_Integer_Hex);
@@ -998,6 +1190,7 @@ begin
         else
           Result := setTok(tk_Unkown);
       end;
+{$IFNDEF MODERNPASCAL}
     '%':
       begin
         if (getChar(1) in ['0'..'1']) then
@@ -1009,6 +1202,34 @@ begin
         else
           Result := setTok(tk_Unkown);
       end;
+{$ELSE}
+      '%': if (lcoExtendedSyntax in FOptions) then Result:=setTok(tk_op_MOD)
+          else Result := setTok(tk_Unkown);
+//      '"':if (lcoExtendedSyntax in FOptions) then begin
+//           Inc(FPos);
+//           while (not (CurChar in ['"', #0])) do NextPos_CountLines();
+//           Result := setTok(tk_typ_String);
+//         end
+//         else Result := setTok(tk_Unkown);
+    #96:if (lcoExtendedSyntax in FOptions) then begin
+        Inc(FPos);
+        while (not (CurChar in [#96, #0])) do NextPos_CountLines();
+        Result := setTok(tk_typ_String);
+      end
+         else Result := setTok(tk_Unkown);
+    #145:if (lcoExtendedSyntax in FOptions) then begin
+        Inc(FPos);
+        while (not (CurChar in [#145, #146, #0])) do NextPos_CountLines();
+        Result := setTok(tk_typ_String);
+      end
+         else Result := setTok(tk_Unkown);
+    #147:if (lcoExtendedSyntax in FOptions) then begin
+        Inc(FPos);
+        while (not (CurChar in [#147, #148, #0])) do NextPos_CountLines();
+        Result := setTok(tk_typ_String);
+      end
+         else Result := setTok(tk_Unkown);
+{$ENDIF}
     'A'..'Z', '_', 'a'..'z': Result := Alpha();
     #34: //heredoc string
       begin
@@ -1141,7 +1362,8 @@ var
 begin
   TokStr := StringReplace(getTokString(), lpString('_'), lpString(''), [rfReplaceAll]);
   case FTok of
-    tk_typ_Integer_Bin: Result := Bin2Dec(TokStr);
+    tk_typ_Integer_Bin: if Copy(TokStr,1,2)<>'0b' then Result := Bin2Dec(TokStr)
+       else Result:=Bin2Dec(Copy(TokStr,3,255));
     else Result := StrToUInt64Def(string(TokStr), UInt64(-1));
   end;
 end;
@@ -1433,9 +1655,33 @@ begin
   end;
 end;
 
-constructor TLapeTokenizerFile.Create(AFileName: AnsiString = '');
+constructor TLapeTokenizerFile.Create(AFileName: AnsiString = ''); // Ozz
+var
+   BFH:File;
+   Ws,Buf:String;
+   Nr:Longint;
+
 begin
-  Create(UnicodeString(AFileName));
+   Assign(BFH, AFileName);
+   {$I-} System.Reset(BFH, 1); {$I+}
+   If IOResult=0 then begin
+      Nr:=4096;
+      SetLength(Ws,Nr);
+      SetLength(Buf,0);
+      While Nr=4096 do begin
+         {$I-} BlockRead(BFH, Ws[1], 4096, Nr); {$I+}
+         Buf:=Buf+Copy(Ws,1,Nr);
+      End;
+      SetLength(Ws,0);
+      try
+         inherited Create(Buf, AFileName);
+      finally
+         SetLength(Buf,0);
+      end;
+      Close(BFH);
+   End;
+//begin
+//  Create(UnicodeString(AFileName));
 end;
 
 initialization
@@ -1446,4 +1692,3 @@ initialization
 finalization
   Lape_ClearKeywordsCache();
 end.
-
