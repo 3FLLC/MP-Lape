@@ -7,7 +7,7 @@
 }
 unit lpinterpreter;
 
-{$I lape.inc}
+{$I includes/lape.inc}
 {$IFNDEF FPC}
   {$UNDEF Lape_Inline}
 {$ENDIF}
@@ -45,9 +45,9 @@ type
     ocDecCall,                                                 //DecCall
     ocDecCall_EndTry,                                          //DecCall_EndTry
 
-    {$I lpinterpreter_invokeopcodes.inc}
-    {$I lpinterpreter_jumpopcodes.inc}
-    {$I lpinterpreter_evalopcodes.inc}
+    {$I includes/lpinterpreter_invokeopcodes.inc}
+    {$I includes/lpinterpreter_jumpopcodes.inc}
+    {$I includes/lpinterpreter_evalopcodes.inc}
   );
   opCodeTypeP = ^opCodeType;
   {$IFDEF Lape_SmallCode}
@@ -68,9 +68,9 @@ type
     JmpFinally: UInt32;
   end;
 
-  {$I lpinterpreter_invokerecords.inc}
-  {$I lpinterpreter_jumprecords.inc}
-  {$I lpinterpreter_evalrecords.inc}
+  {$I includes/lpinterpreter_invokerecords.inc}
+  {$I includes/lpinterpreter_jumprecords.inc}
+  {$I includes/lpinterpreter_evalrecords.inc}
 
 const
   ocSize = SizeOf(opCodeType) {$IFDEF Lape_EmitPos}+SizeOf(TDocPos){$ENDIF};
@@ -85,12 +85,13 @@ const
   TryStackSize = 512;
   CallStackSize = 512;
 
-procedure RunCode(Code: PByte; var DoContinue: TInitBool; InitialVarStack: TByteArray = nil; InitialJump: TCodePos = 0); overload;
-procedure RunCode(Code: PByte; InitialVarStack: TByteArray = nil; InitialJump: TCodePos = 0); overload;
+procedure RunCode(Compiler:TObject; Code: PByte; var DoContinue: TInitBool; InitialVarStack: TByteArray = nil; InitialJump: TCodePos = 0); overload;
+procedure RunCode(Compiler:TObject; Code: PByte; InitialVarStack: TByteArray = nil; InitialJump: TCodePos = 0); overload;
 
 implementation
 
 uses
+  lpcompiler, // Ozz 
   lpexceptions;
 
 {$OverFlowChecks Off}
@@ -121,7 +122,7 @@ begin
     AJump.JumpSafe := Merge.JumpSafe;
 end;
 
-procedure RunCode(Code: PByte; var DoContinue: TInitBool; InitialVarStack: TByteArray = nil; InitialJump: TCodePos = 0);
+procedure RunCode(Compiler:TObject; Code: PByte; var DoContinue: TInitBool; InitialVarStack: TByteArray = nil; InitialJump: TCodePos = 0);
 const
   opNone: opCodeType = opCodeType(ocNone);
 var
@@ -505,13 +506,15 @@ var
     Inc(Code, RecSize + ocSize);
   end;
 
-  {$I lpinterpreter_doinvoke.inc}
-  {$I lpinterpreter_dojump.inc}
-  {$I lpinterpreter_doeval.inc}
+  {$I includes/lpinterpreter_doinvoke.inc}
+  {$I includes/lpinterpreter_dojump.inc}
+  {$I includes/lpinterpreter_doeval.inc}
 
   procedure DaLoop; {$IFDEF Lape_Inline}inline;{$ENDIF}
   var
     GoBack: Boolean;
+    emsg:pchar; // Ozz
+    esize:longint; // Ozz
   label
     Start;
   begin
@@ -519,7 +522,7 @@ var
     GoBack := False;
 
     try
-      while (DoContinue = bTrue) do {$I lpinterpreter_opcodecase.inc}
+      while (DoContinue = bTrue) do {$I includes/lpinterpreter_opcodecase.inc}
     except
       {$IFDEF Lape_EmitPos}
       if (ExceptObject <> InJump.JumpException.Obj) then
@@ -527,6 +530,64 @@ var
       {$ENDIF}
 
       InJump.JumpException.Obj := Exception(AcquireExceptionObject());
+{$IFDEF MODERNPASCAL}
+// Ozz:
+      ExceptionErrorMessage(ExceptObject,ExceptAddr,eMsg,eSize);
+      With TLapeCompiler(Compiler) do begin
+         ExceptionMessage:=Exception(ExceptObject).Message;
+         ExceptionToString:=Exception(ExceptObject).ToString;
+         ExceptionClassName:=Exception(ExceptObject).ClassName;
+         ExceptionFilename:=PDocPos(PtrUInt(Code) + SizeOf(opCodeType))^.Filename;
+         ExceptionLine:=PDocPos(PtrUInt(Code) + SizeOf(opCodeType))^.Line;
+         ExceptionColumn:=PDocPos(PtrUInt(Code) + SizeOf(opCodeType))^.Col;
+         If (ExceptionClassName='EAbort') then ExceptionType:=0
+         Else If (ExceptionClassName='EAbstractError') then ExceptionType:=1
+         Else If (ExceptionClassName='EAccessViolation') then ExceptionType:=2
+         Else If (ExceptionClassName='EArgumentException') then ExceptionType:=3
+         Else If (ExceptionClassName='EArgumentOutOfRangeException') then ExceptionType:=4
+         Else If (ExceptionClassName='EAssertionFailed') then ExceptionType:=5
+         Else If (ExceptionClassName='EBusError') then ExceptionType:=6
+         Else If (ExceptionClassName='EControlC') then ExceptionType:=7
+         Else If (ExceptionClassName='EConvertError') then ExceptionType:=8
+         Else If (ExceptionClassName='EDivByZero') then ExceptionType:=9
+         Else If (ExceptionClassName='EExternal') then ExceptionType:=10
+         Else If (ExceptionClassName='EExternalException') then ExceptionType:=11
+         Else If (ExceptionClassName='EFormatError') then ExceptionType:=12
+         Else If (ExceptionClassName='EHeapMemoryError') then ExceptionType:=13
+         Else If (ExceptionClassName='EInOutError') then ExceptionType:=14
+         Else If (ExceptionClassName='EInterror') then ExceptionType:=15
+         Else If (ExceptionClassName='EIntfCastError') then ExceptionType:=16
+         Else If (ExceptionClassName='EIntOverflow') then ExceptionType:=17
+         Else If (ExceptionClassName='EInvalidCast') then ExceptionType:=18
+         Else If (ExceptionClassName='EInvalidContainer') then ExceptionType:=19
+         Else If (ExceptionClassName='EInvalidInsert') then ExceptionType:=20
+         Else If (ExceptionClassName='EInvalidOp') then ExceptionType:=21
+         Else If (ExceptionClassName='EInvalidPointer') then ExceptionType:=22
+         Else If (ExceptionClassName='EMathError') then ExceptionType:=23
+         Else If (ExceptionClassName='ENoConstructException') then ExceptionType:=24
+         Else If (ExceptionClassName='ENoThreadSupport') then ExceptionType:=25
+         Else If (ExceptionClassName='ENotImplemented') then ExceptionType:=26
+         Else If (ExceptionClassName='ENoWideStringSupport') then ExceptionType:=27
+         Else If (ExceptionClassName='EObjectCheck') then ExceptionType:=28
+         Else If (ExceptionClassName='EOSError') then ExceptionType:=29
+         Else If (ExceptionClassName='EOutOfMemory') then ExceptionType:=30
+         Else If (ExceptionClassName='EOverflow') then ExceptionType:=31
+         Else If (ExceptionClassName='EPackageError') then ExceptionType:=32
+         Else If (ExceptionClassName='EPrivilege') then ExceptionType:=33
+         Else If (ExceptionClassName='EPropReadOnly') then ExceptionType:=34
+         Else If (ExceptionClassName='EPropWriteOnly') then ExceptionType:=35
+         Else If (ExceptionClassName='ERangeError') then ExceptionType:=36
+         Else If (ExceptionClassName='ESafecallException') then ExceptionType:=37
+         Else If (ExceptionClassName='EStackOverflow') then ExceptionType:=38
+         Else If (ExceptionClassName='EUnderflow') then ExceptionType:=39
+         Else If (ExceptionClassName='EVariantError') then ExceptionType:=40
+         Else If (ExceptionClassName='lpException') then ExceptionType:=41
+         Else If (ExceptionClassName='EZeroDivide') then ExceptionType:=42
+         Else If (ExceptionClassName='EDatabaseError') then ExceptionType:=43
+         Else If (ExceptionClassName='EUpdateError') then ExceptionType:=44
+         Else ExceptionType:=41;
+      End;
+{$ENDIF}
       HandleException();
       GoBack := True;
     end;
@@ -581,13 +642,12 @@ begin
   end;
 end;
 
-procedure RunCode(Code: PByte; InitialVarStack: TByteArray = nil; InitialJump: TCodePos = 0);
+procedure RunCode(Compiler:TObject; Code: PByte; InitialVarStack: TByteArray = nil; InitialJump: TCodePos = 0);
 var
   DoContinue: TInitBool;
 begin
   DoContinue := bTrue;
-  RunCode(Code, DoContinue, InitialVarStack, InitialJump);
+  RunCode(Compiler, Code, DoContinue, InitialVarStack, InitialJump);
 end;
 
 end.
-
