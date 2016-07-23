@@ -4,12 +4,10 @@
   License: GNU Lesser GPL (http://www.gnu.org/licenses/lgpl.html)
 
   Bytecode emitter.
-  // this unit has extensive use of SizeOf() This isn't really a RTL function.
-  // Its result is calculated at compile-time, and hard-coded in the executable. 
 }
 unit lpcodeemitter;
 
-{$I lape.inc}
+{$I includes/lape.inc}
 
 interface
 
@@ -155,9 +153,9 @@ type
     function _DecCall_EndTry(var Offset: Integer; Pos: PDocPos = nil): Integer; overload;
     function _DecCall_EndTry(Pos: PDocPos = nil): Integer; overload;
 
-    {$I lpcodeemitter_invokeheader.inc}
-    {$I lpcodeemitter_jumpheader.inc}
-    {$I lpcodeemitter_evalheader.inc}
+    {$I includes/lpcodeemitter_invokeheader.inc}
+    {$I includes/lpcodeemitter_jumpheader.inc}
+    {$I includes/lpcodeemitter_evalheader.inc}
 
     property PCode: Pointer read getPCode;
     property Code: Pointer read _PCode;
@@ -678,9 +676,8 @@ function TLapeCodeEmitterBase._DecCall(Pos: PDocPos = nil): Integer;
 function TLapeCodeEmitterBase._DecCall_EndTry(Pos: PDocPos = nil): Integer;
   var o: Integer; begin o := -1; Result := _DecCall_EndTry(o, Pos); end;
 
-{$I lpcodeemitter_invokebody.inc}
-{$I lpcodeemitter_jumpbody.inc}
-{$I lpcodeemitter_evalbody.inc}
+{$I includes/lpcodeemitter_invokebody.inc}
+{$I includes/lpcodeemitter_jumpbody.inc}
+{$I includes/lpcodeemitter_evalbody.inc}
 
 end.
-
