@@ -7,7 +7,7 @@
 }
 unit lpvartypes_array;
 
-{$I lape.inc}
+{$I includes/lape.inc}
 
 interface
 
@@ -1360,4 +1360,3 @@ begin
 end;
 
 end.
-
