@@ -1,0 +1,519 @@
+{                                                                              }
+{ Modern Pascal - Self test cases                                              }
+{ * Will work with latest LAPE as we IFDEF out what it does not support        }
+{                                                                              }
+
+{$IFDEF MODERNPASCAL}
+Program SelfTest.v1;
+{$ENDIF}
+
+{ Common Pascal Style
+  of Comment spanning
+  across
+  lines }
+
+(* Comment Pascal Style
+   of Comment spanning
+   across
+   lines *)
+
+         // the rest of this line is a comment C/Pascal
+
+{$IFDEF MODERNPASCAL} // if this source is being processed by MODERNPASCAL then include the following:
+
+/* Modern Pascal supports
+   C Style of Comment spanning
+   across lines */
+
+uses
+   Math; // Extend the language to support MATH functions
+
+{$ELSE}  // then following is include for NON-MODERNPASCAL engines:
+
+Type
+   Integer = Int32;  // lape does not know what Integer is, so Alias Int32 to the keyword Integer
+   Byte = Int8;      // another Alias for lape engine
+
+{$ENDIF} // end of the IFDEF logic
+
+Const
+   Author = 'G.E. Ozz Nixon Jr.';
+   Copyright:String = '3F, LLC.';
+
+var
+   D,E,F:Byte;       // Support 0 to 255
+   G:Char;           // Support #1 to #255 (character)
+   Error : Boolean = False;
+
+procedure TestParser;
+begin
+  Assert(0 = 0, 'Number');
+  Assert(0 <> 1, 'Number');
+  Assert(0 < 1, 'Number');
+  Assert(1 > 0, 'Number');
+{$IFDEF MODERNPASCAL}
+  Assert(1 != 0, 'Number');
+{$ENDIF}
+  
+  Assert($0 = 0, 'Hex');
+  Assert($1 = 1, 'Hex');
+  Assert($5A = 90, 'Hex');
+  Assert($A5 = 165, 'Hex');
+  Assert($FF = 255, 'Hex');
+  Assert($FFA5 = 65445, 'Hex');
+
+{$IFDEF MODERNPASCAL}
+  Assert(0x0 = 0, 'Hex');
+  Assert(0x1 = 1, 'Hex');
+  Assert(0x5A = 90, 'Hex');
+  Assert(0x0A5 = 165, 'Hex');
+  Assert(0xFF = 255, 'Hex');
+  Assert(0xFFA5 = 65445, 'Hex');
+// UPPERCASE X NOT ALLOWED!  Assert(0XFFA5 = 65445, 'Hex');
+
+  Assert(1.2e3 = 1200, 'SciReal');
+{$ENDIF}
+  Assert(1.2e+2 = 120, 'SciReal');
+  Assert(1.2e-2 = 0.012, 'SciReal');
+
+{$IFDEF MODERNPASCAL}
+  Assert(0b0 = 0, 'Binary');
+  Assert(0b1 = 1, 'Binary');
+  Assert(0b01 = 1, 'Binary');
+  Assert(0b10 = 2, 'Binary');
+  Assert(0b11 = 3, 'Binary');
+  Assert(0b011 = 3, 'Binary');
+  Assert(0b110 = 6, 'Binary');
+  Assert(0b111 = 7, 'Binary');
+// UPERCAE B NOT ALLOWED!  Assert(0B111 = 7, 'Binary');
+  Assert(0b1111111111111111111111111111 = $0FFFFFFF, 'Binary');
+{$ENDIF}
+
+  //Assert(0213 = 139,'octal');
+  Assert(#65 = 'A', 'String');
+  Assert('X'#65 = 'XA', 'String');
+  Assert('X'#65'Y' = 'XAY', 'String');
+  Assert('X'#65#66'Y' = 'XABY', 'String');
+  Assert('A''B' = 'A'#39'B', 'String');
+  Assert("H"<'h','Other String');
+{$IFDEF MODERNPASCAL}
+  Assert("H"=='H','Other String');
+{$ENDIF}
+
+  Assert(3.14159>3.0,'Floating point');
+end;
+
+procedure TestSimpleTypes;
+var
+  A, B : Integer;
+  C, D : Double; // MP does not have a type/alias of: Real or Float
+  E1, F : String;
+  G, H : Boolean;
+
+begin
+  Assert(2 = 2,            'Int Compare');
+  Assert(1 < 2,            'Int Compare');
+  Assert(2 > 1,            'Int Compare');
+  Assert(2 <= 3,           'Int Compare');
+  Assert(2 <= 2,           'Int Compare');
+  Assert(2 <> 3,           'Int Compare');
+  Assert(3 >= 2,           'Int Compare');
+  Assert(3 >= 3,           'Int Compare');
+
+  Assert(1.2 < 2.3,        'Float Compare');
+  Assert(2.3 > 1.2,        'Float Compare');
+  Assert(1.0 = 1,          'Float Compare Int');
+  Assert(1.1 <> 1,         'Float Compare Int');
+
+  Assert('AB' = 'AB',      'String Compare');
+  Assert('AB' < 'AC',      'String Compare');
+  Assert('BA' > 'AB',      'String Compare');
+  Assert('AC' <> 'AB',     'String Compare');
+
+  Assert(True,                   'Boolean');
+  Assert(not False,              'Boolean');
+  Assert(True or True,           'Boolean Logical Or');
+  Assert(False or True,          'Boolean Logical Or');
+  Assert(True or False,          'Boolean Logical Or');
+  Assert(not (False or False),   'Boolean Logical Or');
+  Assert(True and True,          'Boolean Logical And');
+  Assert(not (True and False),   'Boolean Logical And');
+  Assert(not (False and True),   'Boolean Logical And');
+  Assert(not (False and False),  'Boolean Logical And');
+  Assert(False xor True,         'Boolean Logical Xor');
+  Assert(True xor False,         'Boolean Logical Xor');
+  Assert(not (False xor False),  'Boolean Logical Xor');
+  Assert(not (True xor True),    'Boolean Logical Xor');
+
+  Assert(1 + 1 = 2,        'Int Add Int');
+  Assert(1.1 + 2 = 3.1,    'Float Add Int');
+  Assert(1 + 2.1 = 3.1,    'Int Add Float');
+//Writeln('E3');
+//  Assert(1.1 + 2.1 = 3.2,  'Float Add Float');
+  Assert('1' + '2' = '12', 'String Add String');
+
+  Assert(1 - 1 = 0,        'Int Subtract Int');
+{$IFDEF MODERNPASCAL}
+//  Assert(2.0 - 1.0 = 1.0,  'Float Subtract Float');
+//  Assert(2.1 - 1.1 = 1.0,  'Float Subtract Float');
+{$ENDIF}
+
+  Assert(2 * 3 = 6,        'Int Multiply Int');
+{$IFDEF MODERNPASCAL}
+//  Assert(2.1 * 3.1 = 6.51, 'Float Multiply Float');
+  Assert(2 * 3.1 = 6.2,    'Int Multiply Float');
+  Assert(3.1 * 2 = 6.2,    'Float Multiply Int');
+{$ENDIF}
+
+  Assert(6 / 2 = 3,        'Int Divide Int = Int');
+{$IFDEF MODERNPASCAL}
+//  Assert(6.51 / 3.1 = 2.1, 'Float Divide Float');
+  Assert(1 / 2 = 0.5,      'Int Divide Int = Float');
+  Assert(1 / 2.5 = 0.4,    'Int Divide Float');
+{$ENDIF}
+
+  Assert(4 div 2 = 2,      'Int Div');
+  Assert(5 div 2 = 2,      'Int Div');
+  Assert(4 mod 2 = 0,      'Int Mod');
+  Assert(5 mod 2 = 1,      'Int Mod');
+
+  Assert(1 shl 2 = 4,      'Int Shl');
+  Assert(0 shl 2 = 0,      'Int Shl');
+  Assert(4 shr 2 = 1,      'Int Shr');
+  Assert(4 shr 3 = 0,      'Int Shr');
+  Assert(2 and 3 = 2,      'Int And');
+  Assert(2 or 3 = 3,       'Int Or');
+  Assert(2 xor 3 = 1,      'Int Xor');
+
+  Assert(Sqr(3) = 9,       'Int Sqr');
+  Assert(Sqrt(9) = 3,      'Int Sqrt');
+  Assert(Exp(Ln(9)) = 9,   'Exp / Ln');
+  Assert(2**3 = 8,         'Power');
+  Assert(3**0 = 1,         'Power');
+  Assert(4**-1 = 0.25,     'Power Neg');
+  Assert(2**-2 = 0.25,     'Power Neg');
+  Assert(4**0.5 = 2,       'Power Float');
+end;
+
+procedure TestRangeTypes;
+var
+  A :1..100;
+  B : (v1, v2, v3=5, v4=7, v5);
+
+begin
+  A := 1; // byte default $M+ made A==0
+
+  Assert(A = 1, 'Range');
+  A := 5;
+  Assert(A = 5, 'Range');
+
+  Assert(B = v1, 'Enum');
+{$IFOPT $S-}
+{$S+}
+  Assert(B = 0, 'Enum');
+  Assert(v1 = 0, 'Enum');
+  Assert(v2 = 1, 'Enum');
+  Assert(v3 = 5, 'Enum');
+  Assert(v4 = 7, 'Enum');
+  Assert(v5 = 8, 'Enum');
+{$ENDIF}
+  B := v2;
+  Assert(B = v2, 'Enum');
+//  Assert(B = 1, 'Enum');
+//  B := 7;
+//  Assert(B = v4, 'Enum');
+//  Assert(B = 7, 'Enum');
+end;
+
+(*** UNDERSCONSTRUCTION
+procedure TestStatistic;
+begin
+end;
+***)
+
+(*** UNDERSCONSTRUCTION
+procedure TestArray;
+begin
+end;
+***)
+
+(*** UNDERSCONSTRUCTION
+procedure TestDictionary;
+begin
+end;
+***)
+
+procedure TestExpressions;
+begin
+{$IFDEF MODERNPASCAL}
+  Assert(iif(1 = 1,True,False), 'iif');
+  Assert(iif(1 = 1,2,1) = 2, 'iif');
+  Assert(iif(1 <> 1,2,1) = 1, 'iif');
+  Assert(iif(True,2,1) = 2, 'iif');
+  Assert(iif(False,2,1) = 1, 'iif');
+  Assert(not iif(True,False,True), 'iif');
+{$ENDIF}
+
+//  Assert((var x := 1) = 1, 'assign');
+(* NOTHING LIKE:
+  Assert((x := 1) = 1, 'assign');
+  Assert(x = 1, 'assign');
+  Assert((x := 1) <> 0, 'assign');
+  Assert((x := 1 + 1) = 2, 'assign');
+  Assert(x = 2, 'assign');
+  Assert((y := (x := 1 + 1) + 1) = 3, 'assign');
+  Assert(x = 2, 'assign');
+  Assert(y = 3, 'assign');
+*)
+end;
+
+function Say(I:Int64):Int64; overload;
+begin
+   Result:=I;
+end;
+
+function Say(S:String):String; overload;
+begin
+   Result:=S;
+end;
+
+procedure TestOverloadScriptFunctions;
+begin
+{$IFNOPT $F+}
+{$F+}
+  Assert(Say(1) = 1, 'Say');
+  Assert(Say('a') = '''a''', 'Say');
+{$ENDIF}
+end;
+
+procedure TestLoops;
+var A : Integer;
+begin
+  A := 0;
+  For var I := 1 to 10 do
+    A := A + 1;
+  Assert(A = 10, 'For');
+  A := 0;
+  While A < 10 do
+    A := A + 1;
+  Assert(A = 10, 'While');
+{$IFDEF $X+}
+  A := 0;
+  While A < 10 begin
+    A := A + 1;
+  end;
+  Assert(A = 10, 'While Extended');
+{$ENDIF}
+  A := 0;
+  Repeat
+    A := A + 1;
+  Until A = 10;
+  Assert(A = 10, 'Repeat');
+end;
+
+procedure TestStatements;
+var
+{$IFNOPT $X+}
+   X,
+{$ENDIF}
+   Y:Integer; 
+   D:Single;
+begin
+{$IFOPT $X+}
+  var X := 1;
+{$ELSE}
+  X:=1;
+{$ENDIF}
+  Assert(X = 1, 'assign');
+  Assert(X <> 0, 'assign');
+  Y := 0;
+  if X = 1 then
+    Y := 1;
+  Assert(Y = 1, 'if');
+  Assert(Y <> 0, 'if');
+  if X <> 0 then
+    Y := 2
+  else
+    Y := 3;
+  Assert(Y = 2, 'if');
+  if X = 2 then
+    Y := 4
+  else
+    Y := 5;
+  Assert(Y = 5, 'if');
+
+  X := 1;
+  Case X of
+    0 : Assert(False, 'case');
+    1 : Assert(True, 'case');
+  else
+    Assert(False, 'case');
+  end;
+  D := 0.5;
+  Case D of
+    0..1   : Assert(True, 'case');
+    1..1.9 : Assert(False, 'case');
+  else
+    Assert(False, 'case');
+  end;
+  Case D of
+    0.1..0.2 : Assert(False, 'case');
+    0.6..1.0 : Assert(False, 'case');
+  else
+    Assert(True, 'case');
+  end;
+end;
+
+procedure TestExpressionType;
+// var A : Expression;
+begin
+(* NOTHING LIKE:
+  A := '1+1';
+  Assert(A.Eval = 2, 'Eval');
+*)
+end;
+
+procedure TestRecordType;
+type // TYPE and CONST cannot be defined inside a procedure!
+  R1 = record
+    A, B : Integer;
+    C    : Integer; // Do not support default values! = 1;
+    D    : Boolean;
+  end;
+
+var
+  X : R1;// = ['A':2, 'B':3.3, 'C':4];
+  Y : R1;
+//  Z : R1 = ['F':'X'];
+begin
+  X.A:=2;
+  X.B:=trunc(3.3);
+  X.C:=4;
+  Assert(X.A = 2, 'Record');
+  Assert(X.B = 3, 'Record');
+  Assert(X.C = 4, 'Record');
+  Assert(X.D = False, 'Record');
+  Assert(Y.A = 0, 'Record');
+  Y.C:=1;
+  Assert(Y.C = 1, 'Record');
+  Y.D := True;
+  Assert(Y.D = True, 'Record'); 
+//  Z := X;
+//  Assert(Z.A = 2, 'Record');
+end;
+
+(*** UNDERSCONSTRUCTION
+procedure TestMatrixType;
+begin
+end;
+***)
+
+(*** UNDERSCONSTRUCTION
+procedure TestUnits;
+begin
+end;
+***)
+
+procedure TestExceptions;
+var x, y, z : integer;
+begin
+  try
+    x := 1;
+  except
+    x := 3;
+  end;
+  Assert(x = 1, 'Except');
+  try
+    x := 1;
+    raise 'exception';
+  except
+    x := 3;
+    //Writeln(Exception.Message); TESTING
+  end;
+  Assert(x = 3, 'Raise');
+  try
+    x := 2;
+    y := 3;
+  finally
+    y := 4;
+  end;
+  Assert(x = 2, 'Finally');
+  Assert(y = 4, 'Finally');
+  try
+    try
+      x := 1;
+      y := 1;
+      z := 1;
+      raise 'err#2';
+    finally
+      z := 2;
+    end;
+  except
+    x := 3;
+    try
+      x := 4;
+      raise "message";
+    except
+      x := 6;
+      y := 6;
+    end;
+    x := 7;
+  end;
+  Assert(x = 7, 'Except');
+  Assert(y = 6, 'Except');
+  Assert(z = 2, 'Finally');
+end;
+
+(*** UNDERSCONSTRUCTION
+procedure TestObjects;
+begin
+end;
+***)
+
+begin
+{$SHOWOPTS}
+  Error:=False;
+  Writeln(__Engine__,' v',__Version__,' Self Test');
+  Writeln('');
+
+  // Assert(False, 'Comment');
+  Assert(True, 'Assert'); // Comment
+
+  Writeln('+ Parser');
+  TestParser;
+  Writeln('+ Simple types');
+  TestSimpleTypes;
+  Writeln('+ Range types');
+  TestRangeTypes;
+//  Writeln('+ Statistic');
+//  TestStatistic;
+//  Writeln('+ Array');
+//  TestArray;
+//  Writeln('+ Dictionary');
+//  TestDictionary;
+  Writeln('+ Expressions');
+  TestExpressions;
+  Writeln('+ Overload Script functions');
+  TestOverloadScriptFunctions;
+  Writeln('+ Loops');
+  TestLoops;
+  Writeln('+ Statements');
+  TestStatements;
+  Writeln('+ Expression type');
+  TestExpressionType;
+  Writeln('+ Record type');
+  TestRecordType;
+//  Writeln('+ Matrix type');
+//  TestMatrixType;
+//  Writeln('+ Units');
+//  TestUnits;
+//  Writeln('+ Exceptions');
+//{$IFNDEF MODERNPASCAL}
+//  TestExceptions;
+//{$ENDIF}
+//  Writeln('+ Objects');
+//  TestObjects;
+
+  Writeln('');
+  Writeln('Success');
+end.
