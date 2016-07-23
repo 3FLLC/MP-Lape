@@ -7,7 +7,7 @@
 }
 unit lpvartypes_ord;
 
-{$I lape.inc}
+{$I includes/lape.inc}
 
 interface
 
@@ -994,4 +994,3 @@ begin
 end;
 
 end.
-
