@@ -29,9 +29,11 @@ begin
    Param:='';
    if Arr then Param:='const Index:'+ArrType;
    if (Assigned(Read)) then
+      //addGlobalFunc(Format('function %s.get%s(%s): %s;',[Obj,Item,Param,Typ]),Read);
       addGlobalFunction(obj+'.get'+Item+'('+Param+'):'+Typ,Read);
    if Arr then Param:=Param+'; ';
    if (Assigned(Write)) then
+      //addGlobalFunc(Format('procedure %s.set%s(%sconst Value: %s);',[Obj,Item,Param,Typ]),Write);
       addGlobalProcedure(Obj+'.set'+Item+'('+Param+'const Value:'+Typ+')',Write);
 end;
 
