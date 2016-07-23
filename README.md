@@ -30,4 +30,4 @@ Modern Pascal is:
 - Fast
     - Hard coded parser for performance
     - Native variable address instead of object or variant wrappers
-    - Extremely right AST loop for execution
+    - Extremely tight AST loop for execution
