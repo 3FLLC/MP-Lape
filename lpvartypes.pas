@@ -7,7 +7,7 @@
 }
 unit lpvartypes;
 
-{$I lape.inc}
+{$I includes/lape.inc}
 
 interface
 
@@ -15,6 +15,7 @@ uses
   Classes, SysUtils,
   lptypes, lpparser, lpcodeemitter;
 
+(* OZZ MOVED TO LPTYPES, SO LPPARSER CAN SUPPORT TOGGLE OF FEATURES DURING PARSER
 type
   ECompilerOption = (
     lcoAssertions,                     // {$C} {$ASSERTIONS}
@@ -34,6 +35,7 @@ type
   );
   ECompilerOptionsSet = set of ECompilerOption;
   PCompilerOptionsSet = ^ECompilerOptionsSet;
+*)
 
 const
   Lape_OptionsDef = [lcoCOperators, lcoRangeCheck, lcoShortCircuit, lcoAlwaysInitialize, lcoAutoInvoke, lcoConstAddress];
@@ -610,8 +612,9 @@ type
     FOptions: ECompilerOptionsSet;
     FOptions_PackRecords: UInt8;
 
-    procedure Reset; virtual;
+    procedure Reset{$IFDEF MODERNPASCAL}(KeepUnits:Boolean){$ENDIF}; virtual;
     procedure setEmitter(AEmitter: TLapeCodeEmitter); virtual;
+    procedure setOptions(Value:ECompilerOptionsSet);
   public
     FreeEmitter: Boolean;
 
@@ -677,7 +680,7 @@ type
     property Globals[AName: lpString]: TLapeGlobalVar read getGlobalVar; default;
   published
     property Emitter: TLapeCodeEmitter read FEmitter write setEmitter;
-    property Options: ECompilerOptionsSet read FOptions write FBaseOptions default Lape_OptionsDef;
+    property Options: ECompilerOptionsSet read FOptions write SetOptions default Lape_OptionsDef;
     property Options_PackRecords: UInt8 read FOptions_PackRecords write FBaseOptions_PackRecords default Lape_PackRecordsDef;
   end;
 
@@ -3866,7 +3869,7 @@ begin
   else
     StackIncR := Right.VarType.Size;
 
-  {$I lpcodeemitter_evalcase.inc}
+  {$I includes/lpcodeemitter_evalcase.inc}
 
   if e then
     LapeException(lpeInvalidEvaluation);
@@ -3889,7 +3892,7 @@ begin
     FEmitter.Reset();
 end;
 
-procedure TLapeCompilerBase.Reset;
+procedure TLapeCompilerBase.Reset{$IFDEF MODERNPASCAL}(KeepUnits:Boolean){$ENDIF};
 begin
   FOptions := FBaseOptions;
   FOptions_PackRecords := FBaseOptions_PackRecords;
@@ -3897,6 +3900,13 @@ begin
   if (FEmitter <> nil) then
     FEmitter.Reset();
   while (DecStackInfo(False, False, (FStackInfo <> nil) and (FStackInfo.Owner = nil)) <> nil) do ;
+end;
+
+procedure TLapeCompilerBase.setOptions(Value:ECompilerOptionsSet);
+begin
+// direct assignment is faster than "if values<>foptions"
+   FOptions:=Value;
+   FBaseOptions:=Value;
 end;
 
 constructor TLapeCompilerBase.Create(AEmitter: TLapeCodeEmitter = nil; ManageEmitter: Boolean = True);
@@ -3940,7 +3950,7 @@ begin
   FGlobalDeclarations.Clear();
   FManagedDeclarations.Clear();
   FCachedDeclarations.Clear();
-  Reset();
+  Reset({$IFDEF MODERNPASCAL}False{$ENDIF});
 end;
 
 procedure TLapeCompilerBase.VarToDefault(AVar: TResVar; var Offset: Integer; Pos: PDocPos = nil);
@@ -4545,5 +4555,3 @@ initialization
 finalization
   EmptyStackInfo.Free();
 end.
-
-
