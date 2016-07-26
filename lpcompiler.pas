@@ -61,9 +61,9 @@ type
     OldState: Pointer;
   end;
 
-{$IFDEF MODERNPASCAL}
+{/$IFDEF MODERNPASCAL}
    {$I includes/lpcompiler.001}
-{$ENDIF}
+{/$ENDIF}
 
   TLapeCompiler = class(TLapeCompilerBase)
   private
@@ -98,7 +98,7 @@ type
     FAfterParsing: TLapeCompilerNotification;
 
     function getDocPos: TDocPos; override;
-    procedure Reset{$IFDEF MODERNPASCAL}(KeepUnits:Boolean){$ENDIF}; override;
+    procedure Reset{/$IFDEF MODERNPASCAL}(KeepUnits:Boolean){/$ENDIF}; override;
 
     function getImporting: Boolean; virtual;
     procedure setImporting(Import: Boolean); virtual;
@@ -165,9 +165,9 @@ type
     FreeTokenizer: Boolean;
     FreeTree: Boolean;
 
-{$IFDEF MODERNPASCAL}
+{/$IFDEF MODERNPASCAL}
    {$I includes/lpcompiler.002}
-{$ENDIF}
+{/$ENDIF}
 
     constructor Create(
       ATokenizer: TLapeTokenizerBase; ManageTokenizer: Boolean = True;
@@ -192,7 +192,7 @@ type
     function ParseFile: TLapeTree_Base; virtual;
     procedure EmitCode(ACode: lpString; var Offset: Integer; Pos: PDocPos = nil); override;
 
-    function Compile{$IFDEF MODERNPASCAL}(KeepUnits:Boolean){$ENDIF}: Boolean; virtual;
+    function Compile{/$IFDEF MODERNPASCAL}(KeepUnits:Boolean){/$ENDIF}: Boolean; virtual;
     procedure CheckAfterCompile; virtual;
 
     procedure VarToDefault(AVar: TResVar; var Offset: Integer; Pos: PDocPos = nil); override;
@@ -235,10 +235,10 @@ type
     function addGlobalType(Typ: TLapeType; AName: lpString = ''; ACopy: Boolean = True): TLapeType; overload; virtual;
     function addGlobalType(Str: lpString; AName: lpString): TLapeType; overload; virtual;
 
-{$IFDEF MODERNPASCAL} // Ozz with my RTL size this decreased parse time by 200+ ms
+{/$IFDEF MODERNPASCAL} // Ozz with my RTL size this decreased parse time by 200+ ms
     function addGlobalFunction(AHeader: lpString; Value: Pointer): TLapeGlobalVar;
     function addGlobalProcedure(AHeader: lpString; Value: Pointer): TLapeGlobalVar;
-{$ENDIF}
+{/$ENDIF}
     function addGlobalFunc(AHeader: lpString; Value: Pointer): TLapeGlobalVar; overload; virtual;
     function addGlobalFunc(AHeader: TLapeType_Method; AName, Body: lpString): TLapeTree_Method; overload; virtual;
     function addGlobalFunc(AParams: array of TLapeType; AParTypes: array of ELapeParameterType; AParDefaults: array of TLapeGlobalVar; ARes: TLapeType; Value: Pointer; AName: lpString): TLapeGlobalVar; overload; virtual;
@@ -267,16 +267,16 @@ type
   end;
 
   TLapeType_SystemUnit = class(TLapeType)
-{$IFDEF MODERNPASCAL}
+{/$IFDEF MODERNPASCAL}
   private
      Methods:TLapeStringList;  
-{$ENDIF}
+{/$ENDIF}
   public
     constructor Create(ACompiler: TLapeCompilerBase); reintroduce; virtual;
-{$IFDEF MODERNPASCAL}
+{/$IFDEF MODERNPASCAL}
     destructor Destroy; override;
     function AddMethod(AMethodName: lpString): Boolean;
-{$ENDIF}
+{/$ENDIF}
     procedure ClearSubDeclarations; override;
 
     function CanHaveChild: Boolean; override;
@@ -291,17 +291,17 @@ type
 implementation
 
 uses
-{$IFDEF MODERNPASCAL}
+{/$IFDEF MODERNPASCAL}
   dxutil_environment, dxutil_string, Math, DynLibs,
-{$ENDIF}
+{/$ENDIF}
   CRT, Variants,
   {$IFDEF Lape_NeedAnsiStringsUnit}AnsiStrings,{$ENDIF}
   lpvartypes_ord, lpvartypes_record, lpvartypes_array,
   lpexceptions, lpeval, lpinterpreter;
 
-{$IFDEF MODERNPASCAL}
+{/$IFDEF MODERNPASCAL}
    {$I includes/lpcompiler.003}
-{$ENDIF}
+{/$ENDIF}
 
 function TLapeCompiler.getPDocPos: PDocPos;
 begin
@@ -355,13 +355,13 @@ begin
     Result := NullDocPos;
 end;
 
-procedure TLapeCompiler.Reset{$IFDEF MODERNPASCAL}(KeepUnits:Boolean){$ENDIF};
+procedure TLapeCompiler.Reset{/$IFDEF MODERNPASCAL}(KeepUnits:Boolean){/$ENDIF};
 begin
   inherited;
   EndImporting();
-{$IFDEF MODERNPASCAL}
+{/$IFDEF MODERNPASCAL}
   if not KeepUnits then setLength(loadedUnits,0);
-{$ENDIF}
+{/$ENDIF}
   FOptions := FBaseOptions;
   FOptions_PackRecords := FBaseOptions_PackRecords;
 
@@ -410,7 +410,7 @@ procedure TLapeCompiler.setBaseDefines(Defines: TStringList);
 begin
   Assert(FBaseDefines <> nil);
   FBaseDefines.Assign(Defines);
-  Reset({$IFDEF MODERNPASCAL}False{$ENDIF});
+  Reset({/$IFDEF MODERNPASCAL}False{/$ENDIF});
 end;
 
 function TLapeCompiler.getTokenizer: TLapeTokenizerBase;
@@ -629,7 +629,7 @@ begin
     FreeAndNil(Result);
 end;
 
-{$IFDEF MODERNPASCAL}
+{/$IFDEF MODERNPASCAL}
 {$I includes/pascal.inc}
 
 procedure TLapeCompiler.InitBaseDefinitions;
@@ -637,9 +637,9 @@ var
    NameSpace:PNamespaceRec;
    ThisUnit:TLapeType_SystemUnit;
 
-{$ELSE}
-procedure TLapeCompiler.InitBaseDefinitions;
-{$ENDIF}
+{/$ELSE}
+//procedure TLapeCompiler.InitBaseDefinitions;
+{/$ENDIF}
 
   procedure addCompilerFuncs;
   const
@@ -702,26 +702,26 @@ procedure TLapeCompiler.InitBaseDefinitions;
   end;
 
 begin
-{$IFNDEF MODERNPASCAL}
-  addBaseDefine('Lape');
-  addBaseDefine('Sesquipedalian');
-  {$IFDEF Lape_CaseSensitive}
-  addBaseDefine('Lape_CaseSensitive');
-  {$ELSE}
-  addBaseDefine('Lape_CaseInsensitive');
-  {$ENDIF}
-  {$IFDEF Lape_PascalLabels}
-  addBaseDefine('Lape_PascalLabels');
-  {$ELSE}
-  addBaseDefine('Lape_LapeLabels');
-  {$ENDIF}
-  {$IFDEF Lape_Unicode}
-  addBaseDefine('Lape_Unicode');
-  {$ELSE}
-  addBaseDefine('Lape_Ansi');
-  {$ENDIF}
-  addGlobalVar(addManagedType(TLapeType_SystemUnit.Create(Self)).NewGlobalVarP(nil), 'System').isConstant := True;
-{$ELSE}
+{/$IFNDEF MODERNPASCAL}
+//  addBaseDefine('Lape');
+//  addBaseDefine('Sesquipedalian');
+//  {$IFDEF Lape_CaseSensitive}
+//  addBaseDefine('Lape_CaseSensitive');
+//  {$ELSE}
+//  addBaseDefine('Lape_CaseInsensitive');
+//  {$ENDIF}
+//  {$IFDEF Lape_PascalLabels}
+//  addBaseDefine('Lape_PascalLabels');
+//  {$ELSE}
+//  addBaseDefine('Lape_LapeLabels');
+//  {$ENDIF}
+//  {$IFDEF Lape_Unicode}
+//  addBaseDefine('Lape_Unicode');
+//  {$ELSE}
+//  addBaseDefine('Lape_Ansi');
+//  {$ENDIF}
+//  addGlobalVar(addManagedType(TLapeType_SystemUnit.Create(Self)).NewGlobalVarP(nil), 'System').isConstant := True;
+{/$ELSE}
   addBaseDefine('MODERNPASCAL');
   addBaseDefine('MPC');
 {$IFDEF CODERUNNER}addBaseDefine('CODERUNNER');{$ENDIF}
@@ -755,7 +755,7 @@ begin
   Self.NameSpaces.Add(NameSpace);
 //System.Writeln('lpcompiler Namespace system');
   addGlobalVar(addManagedType(ThisUnit).NewGlobalVarP(nil), 'system').isConstant := True;
-{$ENDIF}
+{/$ENDIF}
   addCompilerFuncs();
 
 {$IFDEF MODERNPASCAL}
@@ -825,12 +825,12 @@ begin
   addGlobalVar(NewMagicMethod({$IFDEF FPC}@{$ENDIF}GetDisposeMethod).NewGlobalVar('_Dispose'));
   addGlobalVar(NewMagicMethod({$IFDEF FPC}@{$ENDIF}GetCopyMethod).NewGlobalVar('_Assign'));
 
-{$IFNDEF MODERNPASCAL}
-  {$I includes/lpeval_import_math.inc}
-  {$I includes/lpeval_import_string.inc}
-  {$I includes/lpeval_import_datetime.inc}
-  {$I includes/lpeval_import_variant.inc}
-{$ENDIF}
+{/$IFNDEF MODERNPASCAL}
+//  {$I includes/lpeval_import_math.inc}
+//  {$I includes/lpeval_import_string.inc}
+//  {$I includes/lpeval_import_datetime.inc}
+//  {$I includes/lpeval_import_variant.inc}
+{/$ENDIF}
 
   addDelayedCode(
     LapeDelayedFlags +
@@ -1004,26 +1004,32 @@ var
   function HasOption(Opt: lpString): Boolean; // Ozz
   begin
      If Copy(Opt,1,1)='$' then Delete(Opt,1,1);
-     if (Opt='c+') then Result := (lcoAssertions in FOptions)
-     else if (Opt='c-') then Result := not (lcoAssertions in FOptions)
+     if (Opt='a+') then Result := (lcoAssertions in FOptions)
+     else if (Opt='a-') then Result := not (lcoAssertions in FOptions)
      else if (Opt='b+') then Result := (lcoShortCircuit in FOptions)
      else if (Opt='b-') then Result := not (lcoShortCircuit in FOptions)
+     else if (Opt='c+') then Result := (lcoCOperators in FOptions)
+     else if (Opt='c-') then Result := not (lcoCOperators in FOptions)
      else if (Opt='d+') then Result := (lcoFullDisposal in FOptions)
      else if (Opt='d-') then Result := not (lcoFullDisposal in FOptions)
      else if (Opt='f+') then Result := (lcoAutoInvoke in FOptions)
      else if (Opt='f-') then Result := not (lcoAutoInvoke in FOptions)
+     else if (Opt='j+') then Result := (lcoConstAddress in FOptions)
+     else if (Opt='j-') then Result := not (lcoConstAddress in FOptions)
      else if (Opt='l+') then Result := (lcoLooseSemicolon in FOptions)
      else if (Opt='l-') then Result := not (lcoLooseSemicolon in FOptions)
      else if (Opt='m+') then Result := (lcoAlwaysInitialize in FOptions)
      else if (Opt='m-') then Result := not (lcoAlwaysInitialize in FOptions)
+     else if (Opt='p+') then Result := (lcoAutoProperties in FOptions)
+     else if (Opt='p-') then Result := not (lcoAutoProperties in FOptions)
      else if (Opt='r+') then Result := (lcoRangeCheck in FOptions)
      else if (Opt='r-') then Result := not (lcoRangeCheck in FOptions)
      else if (Opt='s+') then Result := (lcoScopedEnums in FOptions)
      else if (Opt='s-') then Result := not (lcoScopedEnums in FOptions)
      else if (Opt='x+') then Result := (lcoLooseSyntax in FOptions)
      else if (Opt='x-') then Result := not (lcoLooseSyntax in FOptions)
-     else if (Opt='%+') then Result := (lcoContinueCase in FOptions)
-     else if (Opt='%-') then Result := not (lcoContinueCase in FOptions)
+     else if (Opt='z+') then Result := (lcoContinueCase in FOptions)
+     else if (Opt='z-') then Result := not (lcoContinueCase in FOptions)
      else Result:=False;
    end;
 
@@ -1167,7 +1173,7 @@ begin
 
     pushTokenizer(NewTokenizer);
   end
-  else if (Directive = 'a') or (Directive = 'align') then
+  else if (Directive = 'align') then
   begin
     Argument := LowerCase(Argument);
     if (Argument = 'on') then
@@ -1188,13 +1194,11 @@ begin
   else if (Directive = 'a8') or (Directive = 'align8') then FOptions_PackRecords := 8
   else if (Directive = 'a16') or (Directive = 'align16') then FOptions_PackRecords := 16
 // I also put these in alphabetical order
+  else if (Directive = 'a') or (Directive = 'assertions') then
+    setOption(lcoAssertions)
   else if (Directive = 'b') or (Directive = 'booleval') then
     setOption(lcoShortCircuit)
-  else if (Directive = 'c') or (Directive = 'assertions') then
-    setOption(lcoAssertions)
-  else if (Directive = 'continuecase') then
-    setOption(lcoContinueCase)
-  else if (Directive = 'coperators') then
+  else if (Directive = 'c') or (Directive = 'coperators') then
     setOption(lcoCOperators)
   else if (Directive = 'd') or (Directive = 'fulldisposal') then
     setOption(lcoFullDisposal)
@@ -1220,10 +1224,13 @@ begin
        end
     end;
 {$ENDIF}
+  else if (Directive = 'h') then begin // absorb $H+
+  end
   else if (Directive = 'j') or (Directive = 'constaddress') then
     setOption(lcoConstAddress)
   else if (Directive = 'l') or (Directive = 'loosesemicolon') then
     setOption(lcoLooseSemicolon)
+
 // $LIBPREFIX 'lib'
 // $LIBSUFFIX '.so', '.dll', '.dylib'
 // $LIBPATH '/usr/lib64/'
@@ -1253,6 +1260,8 @@ begin
 // $MESSAGE FATAL 'string'
   else if (Directive = 'm') or (Directive = 'memoryinit') then
     setOption(lcoAlwaysInitialize)
+  else if (Directive = 'mode') then begin // absorb FPC $mode opt
+  end
 // see $U   $NOTE 'message'
 // $O+/- (optimization)
   else if (Directive = 'p') or (Directive = 'autoproperties') then
@@ -1273,17 +1282,22 @@ begin
 // $WARNING 'message'
   else if (Directive = 'x') or (Directive = 'extendedsyntax') then
     setOption(lcoLooseSyntax)
+  else if (Directive = 'z') or (Directive = 'continuecase') then
+    setOption(lcoContinueCase)
   else if (Directive = 'showopts') then begin
-     If lcoAssertions in FOptions then System.Write('$C+,') else System.Write('$C-,');
-     If lcoRangeCheck in FOptions then System.Write('$R+,') else System.Write('$R-,');
+     If lcoAssertions in FOptions then System.Write('$A+,') else System.Write('$A-,');
      If lcoShortCircuit in FOptions then System.Write('$B+,') else System.Write('$B-,');
-     If lcoAlwaysInitialize in FOptions then System.Write('$M+,') else System.Write('$M-,');
+     If lcoCOperators in FOptions then System.Write('$C+,') else System.Write('$C-,');
      If lcoFullDisposal in FOptions then System.Write('$D+,') else System.Write('$D-,');
-     If lcoLooseSemicolon in FOptions then System.Write('$L+,') else System.Write('$L-,');
-     If lcoLooseSyntax in FOptions then System.Write('$X+,') else System.Write('$X-,');
      If lcoAutoInvoke in FOptions then System.Write('$F+,') else System.Write('$F-,');
+     If lcoConstAddress in FOptions then System.Write('$J+,') else System.Write('$J-,');
+     If lcoLooseSemicolon in FOptions then System.Write('$L+,') else System.Write('$L-,');
+     If lcoAlwaysInitialize in FOptions then System.Write('$M+,') else System.Write('$M-,');
+     If lcoAutoProperties in FOptions then System.Write('$P+,') else System.Write('$P-,');
+     If lcoRangeCheck in FOptions then System.Write('$R+,') else System.Write('$R-,');
      If lcoScopedEnums in FOptions then System.Write('$S+,') else System.Write('$S-,');
-     If lcoContinueCase in FOptions then System.Write('$%+,') else System.Write('$%-,');
+     If lcoLooseSyntax in FOptions then System.Write('$X+,') else System.Write('$X-,');
+     If lcoContinueCase in FOptions then System.Write('$Z+,') else System.Write('$Z-,');
      If FOptions_PackRecords=1 then System.Writeln('align to byte') else System.Writeln('align on ',FOptions_PackRecords);
   end
   else
@@ -3384,12 +3398,12 @@ constructor TLapeCompiler.Create(
   AEmitter: TLapeCodeEmitter = nil; ManageEmitter: Boolean = True);
 begin
   inherited Create(AEmitter, ManageEmitter);
-{$IFDEF MODERNPASCAL}
+{/$IFDEF MODERNPASCAL}
   HostObjects:=TList.Create;
   Namespaces:=TList.Create;
   SetLength(DLLHandles,0);
   SetLength(ChainArr,0);
-{$ENDIF}
+{/$ENDIF}
 
   FTokenizer := -1;
   FImporting := nil;
@@ -3443,11 +3457,11 @@ begin
   FInternalMethodMap['Copy'] := TLapeTree_InternalMethod_Copy;
   FInternalMethodMap['Delete'] := TLapeTree_InternalMethod_Delete;
   FInternalMethodMap['Insert'] := TLapeTree_InternalMethod_Insert;
-{$IFNDEF MODERNPASCAL}
-  FInternalMethodMap['Ord'] := TLapeTree_InternalMethod_Ord;
-  FInternalMethodMap['Inc'] := TLapeTree_InternalMethod_Inc;
-  FInternalMethodMap['Dec'] := TLapeTree_InternalMethod_Dec;
-{$ENDIF}
+{/$IFNDEF MODERNPASCAL}
+  FInternalMethodMap['intlOrd'] := TLapeTree_InternalMethod_Ord;
+  FInternalMethodMap['intlInc'] := TLapeTree_InternalMethod_Inc;
+  FInternalMethodMap['intlDec'] := TLapeTree_InternalMethod_Dec;
+{/$ENDIF}
   FInternalMethodMap['Succ'] := TLapeTree_InternalMethod_Succ;
   FInternalMethodMap['Pred'] := TLapeTree_InternalMethod_Pred;
 
@@ -3457,16 +3471,16 @@ begin
   FInternalMethodMap['raise'] := TLapeTree_InternalMethod_Raise;
 
   setTokenizer(ATokenizer);
-  Reset({$IFDEF MODERNPASCAL}False{$ENDIF});
+  Reset({/$IFDEF MODERNPASCAL}False{/$ENDIF});
 
   StartImporting();
-{$IFNDEF MODERNPASCAL}
-  InitBaseDefinitions();
-{$ENDIF}
+{.$IFNDEF MODERNPASCAL}
+//  InitBaseDefinitions(); // Testing
+{.$ENDIF}
 end;
 
 destructor TLapeCompiler.Destroy;
-{$IFDEF MODERNPASCAL}
+{/$IFDEF MODERNPASCAL}
 Var
    HostObjectRec:PHostObjectRec;
    NamespaceRec:PNamespaceRec;
@@ -3491,9 +3505,9 @@ begin
      NameSpaces.Delete(0);
   End;
   FreeAndNil(NameSpaces);
-{$ELSE}
-begin
-{$ENDIF}
+{/$ELSE}
+//begin
+{/$ENDIF}
   EndImporting();
   setTokenizer(nil);
   if FreeTree and (FDelayedTree <> nil) then
@@ -3565,11 +3579,11 @@ begin
       end;
     end;
 
-{$IFNDEF MODERNPASCAL}
+{.$IFNDEF MODERNPASCAL}
     FOptions := Options;
     FOptions_PackRecords := Options_PackRecords;
     FDefines.Text := Defines;
-{$ENDIF}
+{.$ENDIF}
     FConditionalStack.ImportFromArray(Conditionals);
   end;
   if DoFreeState then
@@ -3769,26 +3783,27 @@ begin
   end;
 end;
 
-function TLapeCompiler.Compile{$IFDEF MODERNPASCAL}(KeepUnits:Boolean){$ENDIF}: Boolean;
-{$IFDEF MODERNPASCAL}
+function TLapeCompiler.Compile{/$IFDEF MODERNPASCAL}(KeepUnits:Boolean){/$ENDIF}: Boolean;
+{/$IFDEF MODERNPASCAL}
 Var
    I:Longint;
    Identifiers: TStringArray;
    HostObjectRec:PHostObjectRec;
-{$ENDIF}
+{/$ENDIF}
 
 begin
   Result := False;
   try
 
-{$IFDEF MODERNPASCAL}
+{/$IFDEF MODERNPASCAL}
     Reset(KeepUnits);
+/// Testing    InitBaseDefinitions(); // 1150609 OZZ
+{/$ELSE}
+//    Reset();
+{/$ENDIF}
     InitBaseDefinitions(); // 1150609 OZZ
-{$ELSE}
-    Reset();
-{$ENDIF}
     IncStackInfo(True);
-{$IFDEF MODERNPASCAL}
+{/$IFDEF MODERNPASCAL}
 // LOAD PREDEFINED UNITS:
     If KeepUnits then Begin
        Identifiers:=loadedUnits;
@@ -3805,7 +3820,7 @@ begin
        HostObjectRec:=PHostObjectRec(HostObjects[I]);
        addGlobalVar(HostObjectRec^.TypeName, HostObjectRec^.CallBack, HostObjectRec^.VarName);
     End;
-{$ENDIF}
+{/$ENDIF}
     FTree := ParseFile();
     if (FTree = nil) and (FDelayedTree.GlobalCount(False) <= 0) then
       LapeException(lpeExpressionExpected+'4');
@@ -3827,7 +3842,7 @@ begin
     Result := True;
 
   except
-    Reset({$IFDEF MODERNPASCAL}False{$ENDIF});
+    Reset({/$IFDEF MODERNPASCAL}False{/$ENDIF});
     raise;
   end;
 end;
@@ -4165,7 +4180,7 @@ begin
   end;
 end;
 
-{$IFDEF MODERNPASCAL}
+{/$IFDEF MODERNPASCAL}
 function TLapeCompiler.addGlobalFunction(AHeader: lpString; Value: Pointer): TLapeGlobalVar;
 begin
    Result:=AddGlobalFunc('function '+AHeader, Value);
@@ -4175,7 +4190,7 @@ function TLapeCompiler.addGlobalProcedure(AHeader: lpString; Value: Pointer): TL
 begin
    Result:=AddGlobalFunc('procedure '+AHeader, Value);
 end;
-{$ENDIF}
+{/$ENDIF}
 
 function TLapeCompiler.addGlobalFunc(AHeader: lpString; Value: Pointer): TLapeGlobalVar;
 var
@@ -4183,7 +4198,7 @@ var
   OldState: Pointer;
 begin
   Result := nil;
-  OldState := getTempTokenizerState(AHeader + ';', '!addGlobalFuncHdr');
+  OldState := getTempTokenizerState(AHeader + ';', '!addGlobalFuncHdr ('+AHeader+')');
 
   try
     Expect([tk_kw_Function, tk_kw_Procedure, tk_kw_Operator]);
@@ -4307,11 +4322,11 @@ begin
 
   if (ACompiler <> nil) then begin
     ManagedDeclarations := ACompiler.GlobalDeclarations;
-    {$IFDEF MODERNPASCAL}Methods:=TLapeStringList.Create('',dupAccept,False,True);{$ENDIF}
+    {/$IFDEF MODERNPASCAL}Methods:=TLapeStringList.Create('',dupAccept,False,True);{/$ENDIF}
   End;
 end;
 
-{$IFDEF MODERNPASCAL}
+{/$IFDEF MODERNPASCAL}
 Destructor TLapeType_SystemUnit.Destroy;
 begin
    Methods.Free;
@@ -4325,7 +4340,7 @@ begin
      Methods.Add(LowerCase(AMethodName));
   End;
 end;
-{$ENDIF}
+{/$ENDIF}
 
 procedure TLapeType_SystemUnit.ClearSubDeclarations;
 begin
@@ -4338,11 +4353,11 @@ end;
 
 function TLapeType_SystemUnit.HasChild(AName: lpString): Boolean;
 begin
-{$IFDEF MODERNPASCAL}
+{/$IFDEF MODERNPASCAL}
   Result := CanHaveChild() and (Methods.IndexOf(Lowercase(AName))>-1) and FCompiler.hasDeclaration(AName, nil);
-{$ELSE}
-  Result := CanHaveChild() and FCompiler.hasDeclaration(AName, nil);
-{$ENDIF}
+{/$ELSE}
+//  Result := CanHaveChild() and FCompiler.hasDeclaration(AName, nil);
+{/$ENDIF}
 end;
 
 function TLapeType_SystemUnit.HasChild(ADecl: TLapeDeclaration): Boolean;
