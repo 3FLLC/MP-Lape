@@ -612,9 +612,9 @@ type
     FOptions: ECompilerOptionsSet;
     FOptions_PackRecords: UInt8;
 
-    procedure Reset{$IFDEF MODERNPASCAL}(KeepUnits:Boolean){$ENDIF}; virtual;
+    procedure Reset{/$IFDEF MODERNPASCAL}(KeepUnits:Boolean){/$ENDIF}; virtual;
     procedure setEmitter(AEmitter: TLapeCodeEmitter); virtual;
-    procedure setOptions(Value:ECompilerOptionsSet);
+    //procedure setOptions(Value:ECompilerOptionsSet);
   public
     FreeEmitter: Boolean;
 
@@ -680,7 +680,7 @@ type
     property Globals[AName: lpString]: TLapeGlobalVar read getGlobalVar; default;
   published
     property Emitter: TLapeCodeEmitter read FEmitter write setEmitter;
-    property Options: ECompilerOptionsSet read FOptions write SetOptions default Lape_OptionsDef;
+    property Options: ECompilerOptionsSet read FOptions write FBaseOptions default Lape_OptionsDef;
     property Options_PackRecords: UInt8 read FOptions_PackRecords write FBaseOptions_PackRecords default Lape_PackRecordsDef;
   end;
 
@@ -713,7 +713,11 @@ const
   Lape_SelfParam   = lptVar;
 
 var
+  {$IFDEF Lape_CaseSensitive}
   LapeReservedLocals: lpString = '|System|';
+  {$ELSE}
+  LapeReservedLocals: lpString = '|system|';
+  {$ENDIF}
   EmptyStackInfo: TLapeEmptyStack = nil;
   _ResVar: TResVar;
 
@@ -3495,6 +3499,7 @@ begin
   end;
 end;
 
+// TODO: Optimize Decl lookup:
 function TLapeStackInfo.addDeclaration(Decl: TLapeDeclaration): Integer;
 begin
   if (Decl = nil) then
@@ -3892,7 +3897,7 @@ begin
     FEmitter.Reset();
 end;
 
-procedure TLapeCompilerBase.Reset{$IFDEF MODERNPASCAL}(KeepUnits:Boolean){$ENDIF};
+procedure TLapeCompilerBase.Reset{/$IFDEF MODERNPASCAL}(KeepUnits:Boolean){/$ENDIF};
 begin
   FOptions := FBaseOptions;
   FOptions_PackRecords := FBaseOptions_PackRecords;
@@ -3902,12 +3907,12 @@ begin
   while (DecStackInfo(False, False, (FStackInfo <> nil) and (FStackInfo.Owner = nil)) <> nil) do ;
 end;
 
-procedure TLapeCompilerBase.setOptions(Value:ECompilerOptionsSet);
+{procedure TLapeCompilerBase.setOptions(Value:ECompilerOptionsSet);
 begin
 // direct assignment is faster than "if values<>foptions"
    FOptions:=Value;
    FBaseOptions:=Value;
-end;
+end;}
 
 constructor TLapeCompilerBase.Create(AEmitter: TLapeCodeEmitter = nil; ManageEmitter: Boolean = True);
 begin
@@ -3950,7 +3955,7 @@ begin
   FGlobalDeclarations.Clear();
   FManagedDeclarations.Clear();
   FCachedDeclarations.Clear();
-  Reset({$IFDEF MODERNPASCAL}False{$ENDIF});
+  Reset({/$IFDEF MODERNPASCAL}False{/$ENDIF});
 end;
 
 procedure TLapeCompilerBase.VarToDefault(AVar: TResVar; var Offset: Integer; Pos: PDocPos = nil);
@@ -4550,7 +4555,6 @@ begin
 end;
 
 initialization
-  LapeReservedLocals := LapeCase(LapeReservedLocals);
   EmptyStackInfo := TLapeEmptyStack.Create();
 finalization
   EmptyStackInfo.Free();
