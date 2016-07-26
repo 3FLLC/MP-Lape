@@ -118,7 +118,7 @@ type
   TStringArray = array of lpString;
   TByteArray = array of Byte;
   TIntegerArray = array of Integer;
-  TInitBool = (bUnknown, bFalse, bTrue{$IFDEF MODERNPASCAL},bChain{$ENDIF});
+  TInitBool = (bUnknown, bFalse, bTrue{/$IFDEF MODERNPASCAL},bChain{/$ENDIF});
 
   TCodeArray = TByteArray;
   PCodeArray = ^TCodeArray;
