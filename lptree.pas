@@ -806,6 +806,7 @@ uses
 
 function getFlowStatement(Offset: Integer; Pos: PDocPos = nil; JumpSafe: Boolean = False): TLapeFlowStatement;
 begin
+System.Writeln('getFlowStatement');
   Result := NullFlowStatement;
   Result.CodeOffset := Offset;
   if (Pos <> nil) then
@@ -815,6 +816,7 @@ end;
 
 function EnsureCompound(Compiler: TLapeCompilerBase; Statement: TLapeTree_Base; AllowNil: Boolean = True): TLapeTree_StatementList;
 begin
+System.Writeln('EnsureCompound');
   if (Statement = nil) then
     if AllowNil then
       Result := nil
@@ -834,6 +836,7 @@ function GetMagicMethodOrNil(Compiler: TLapeCompilerBase; AName: lpString; APara
 var
   Method: TLapeGlobalVar;
 begin
+//System.Writeln('GetMagicMethodOrNil '+AName);
   if (Compiler = nil) then
     Result := NullResVar;
 
@@ -1961,7 +1964,7 @@ var
         end;
 
         if (Par = nil) or (not (Params[i].ParType in Lape_ValParams)) then
-          LapeException(lpeCannotInvoke, FParams[i].DocPos);
+          LapeException(lpeCannotInvoke+'1', FParams[i].DocPos);
 
         if (Params[i].VarType <> nil) and (not Params[i].VarType.Equals(Par.VarType)) then
           if Params[i].VarType.CompatibleWith(Par.VarType) then
@@ -2002,7 +2005,7 @@ begin
         if (IdentVar <> nil) and IdentVar.HasType() and (IdentVar.VarType is TLapeType_OverloadedMethod) then
           LapeExceptionFmt(lpeNoOverloadedMethod, [getParamTypesStr()], IdentExpr.DocPos)
         else
-          LapeException(lpeCannotInvoke, DocPos);
+          LapeException(lpeCannotInvoke+'2', DocPos);
 
       if (IdentVar.VarType is TLapeType_MethodOfType) and
          (not (TLapeType_MethodOfType(IdentVar.VarType).SelfParam in Lape_ValParams)) and
@@ -2190,7 +2193,7 @@ var
         if (ParamVars[i].VarPos.MemPos = NullResVar.VarPos.MemPos) or
            ((Params[i].VarType <> ParamVars[i].VarType) and (not ParamVars[i].HasType()))
         then
-          LapeException(lpeCannotInvoke, [FParams[i], Self]);
+          LapeException(lpeCannotInvoke+'3', [FParams[i], Self]);
 
         if (Params[i].ParType in Lape_RefParams) then
         begin
@@ -2204,7 +2207,7 @@ var
         begin
           AssignToTempVar(ParamVars[i], Params[i], mpStack, Self._DocPos);
           if (ParamVars[i].VarPos.MemPos <> mpStack) or (not ParamVars[i].HasType()) then
-            LapeException(lpeCannotInvoke);
+            LapeException(lpeCannotInvoke+'4');
         end;
       except on E: lpException do
         LapeException(lpString(E.Message), [FParams[i], Self]);
@@ -2246,7 +2249,7 @@ var
         if (ParamVars[i].VarPos.MemPos = mpStack) or
            ((Params[i].VarType <> ParamVars[i].VarType) and (not ParamVars[i].HasType()))
         then
-          LapeException(lpeCannotInvoke, [FParams[i], Self])
+          LapeException(lpeCannotInvoke+'5', [FParams[i], Self])
         else if (not (Params[i].ParType in Lape_ValParams)) and (not ParamVars[i].Writeable) then
           LapeException(lpeVariableExpected, [FParams[i], Self]);
 
@@ -2339,7 +2342,7 @@ begin
       if IdentVar.HasType() and (IdentVar.VarType is TLapeType_OverloadedMethod) then
         LapeExceptionFmt(lpeNoOverloadedMethod, [getParamTypesStr()], IdentExpr.DocPos)
       else
-        LapeException(lpeCannotInvoke, IdentExpr.DocPos);
+        LapeException(lpeCannotInvoke+'6', IdentExpr.DocPos);
 
     if (IdentVar.VarType is TLapeType_MethodOfType) and
        (not (TLapeType_MethodOfType(IdentVar.VarType).SelfParam in Lape_ValParams)) and
@@ -5164,8 +5167,16 @@ begin
 end;
 
 procedure TLapeTree_Method.addExitStatement(JumpSafe: Boolean; var Offset: Integer; Pos: PDocPos = nil);
+var
+   Result:TLapeFlowStatement;
 begin
-  FExitStatements.Add(getFlowStatement(FCompiler.Emitter._JmpSafeR(0, Offset, Pos), Pos, JumpSafe));
+  Result := NullFlowStatement;
+  Result.CodeOffset := FCompiler.Emitter._JmpSafeR(0, Offset, Pos);
+  if (Pos <> nil) then
+    Result.DocPos := Pos^;
+  Result.JumpSafe := JumpSafe;
+  FExitStatements.Add(Result);
+  //FExitStatements.Add(getFlowStatement(FCompiler.Emitter._JmpSafeR(0, Offset, Pos), Pos, JumpSafe));
 end;
 
 procedure TLapeTree_VarList.DeleteChild(Node: TLapeTree_Base);
@@ -5671,7 +5682,15 @@ function TLapeTree_Case.Compile(var Offset: Integer): TResVar;
     Result := nil;
     if (Statement <> nil) then
     begin
-      Result := EnsureCompound(FCompiler, Statement);
+      //Result := EnsureCompound(FCompiler, Statement);
+      if (Statement is TLapeTree_StatementList) then
+         Result := TLapeTree_StatementList(Statement)
+      else
+      begin
+         Result := TLapeTree_StatementList.Create(Statement);
+         Result.Parent := Statement.Parent;
+         Result.addStatement(Statement);
+      end;
       TLapeTree_StatementList(Result).addStatement(
         TLapeTree_Callback.Create(FCompiler, {$IFDEF FPC}@{$ENDIF}CompileContinue, Pointer(i)),
         True
@@ -5717,12 +5736,20 @@ begin
 end;
 
 procedure TLapeTree_Case.addContinueStatement(JumpSafe: Boolean; var Offset: Integer; Pos: PDocPos = nil);
+var
+   Result:TLapeFlowStatement;
 begin
   Assert(lcoContinueCase in CompilerOptions);
-  if JumpSafe then
-    FContinueStatements.Add(getFlowStatement(FCompiler.Emitter._JmpSafeR(0, Offset, Pos), Pos, JumpSafe))
+  Result := NullFlowStatement;
+  if JumpSafe then begin
+     Result.CodeOffset := FCompiler.Emitter._JmpSafeR(0, Offset, Pos);
+     Result.JumpSafe := JumpSafe;
+  end
   else
-    FContinueStatements.Add(getFlowStatement(FCompiler.Emitter._JmpR(0, Offset, Pos), Pos, JumpSafe));
+     Result.CodeOffset := FCompiler.Emitter._JmpR(0, Offset, Pos);
+  if (Pos <> nil) then
+    Result.DocPos := Pos^;
+  FContinueStatements.Add(Result);
 end;
 
 function TLapeTree_While.CompileBody(var Offset: Integer): TResVar;
@@ -5801,19 +5828,35 @@ begin
 end;
 
 procedure TLapeTree_While.addBreakStatement(JumpSafe: Boolean; var Offset: Integer; Pos: PDocPos = nil);
+var
+   Result:TLapeFlowStatement;
 begin
-  if JumpSafe then
-    FBreakStatements.Add(getFlowStatement(FCompiler.Emitter._JmpSafeR(0, Offset, Pos), Pos, JumpSafe))
+  Result := NullFlowStatement;
+  if JumpSafe then begin
+     Result.CodeOffset := FCompiler.Emitter._JmpSafeR(0, Offset, Pos);
+     Result.JumpSafe := JumpSafe;
+  end
   else
-    FBreakStatements.Add(getFlowStatement(FCompiler.Emitter._JmpR(0, Offset, Pos), Pos, JumpSafe));
+     Result.CodeOffset := FCompiler.Emitter._JmpR(0, Offset, Pos);
+  if (Pos <> nil) then
+    Result.DocPos := Pos^;
+  FBreakStatements.Add(Result);
 end;
 
 procedure TLapeTree_While.addContinueStatement(JumpSafe: Boolean; var Offset: Integer; Pos: PDocPos = nil);
+var
+   Result:TLapeFlowStatement;
 begin
-  if JumpSafe then
-    FContinueStatements.Add(getFlowStatement(FCompiler.Emitter._JmpSafeR(0, Offset, Pos), Pos, JumpSafe))
+  Result := NullFlowStatement;
+  if JumpSafe then begin
+     Result.CodeOffset := FCompiler.Emitter._JmpSafeR(0, Offset, Pos);
+     Result.JumpSafe := JumpSafe;
+  end
   else
-    FContinueStatements.Add(getFlowStatement(FCompiler.Emitter._JmpR(0, Offset, Pos), Pos, JumpSafe));
+     Result.CodeOffset := FCompiler.Emitter._JmpR(0, Offset, Pos);
+  if (Pos <> nil) then
+    Result.DocPos := Pos^;
+  FContinueStatements.Add(Result);
 end;
 
 procedure TLapeTree_For.setCounter(Node: TLapeTree_ExprBase);
@@ -6148,19 +6191,35 @@ begin
 end;
 
 procedure TLapeTree_Repeat.addBreakStatement(JumpSafe: Boolean; var Offset: Integer; Pos: PDocPos = nil);
+var
+   Result:TLapeFlowStatement;
 begin
-  if JumpSafe then
-    FBreakStatements.Add(getFlowStatement(FCompiler.Emitter._JmpSafeR(0, Offset, Pos), Pos, JumpSafe))
+  Result := NullFlowStatement;
+  if JumpSafe then begin
+     Result.CodeOffset := FCompiler.Emitter._JmpSafeR(0, Offset, Pos);
+     Result.JumpSafe := JumpSafe;
+  end
   else
-    FBreakStatements.Add(getFlowStatement(FCompiler.Emitter._JmpR(0, Offset, Pos), Pos, JumpSafe));
+     Result.CodeOffset := FCompiler.Emitter._JmpR(0, Offset, Pos);
+  if (Pos <> nil) then
+    Result.DocPos := Pos^;
+  FBreakStatements.Add(Result);
 end;
 
 procedure TLapeTree_Repeat.addContinueStatement(JumpSafe: Boolean; var Offset: Integer; Pos: PDocPos = nil);
+var
+   Result:TLapeFlowStatement;
 begin
-  if JumpSafe then
-    FContinueStatements.Add(getFlowStatement(FCompiler.Emitter._JmpSafeR(0, Offset, Pos), Pos, JumpSafe))
+  Result := NullFlowStatement;
+  if JumpSafe then begin
+     Result.CodeOffset := FCompiler.Emitter._JmpSafeR(0, Offset, Pos);
+     Result.JumpSafe := JumpSafe;
+  end
   else
-    FContinueStatements.Add(getFlowStatement(FCompiler.Emitter._JmpR(0, Offset, Pos), Pos, JumpSafe));
+     Result.CodeOffset := FCompiler.Emitter._JmpR(0, Offset, Pos);
+  if (Pos <> nil) then
+    Result.DocPos := Pos^;
+  FContinueStatements.Add(Result);
 end;
 
 procedure TLapeTree_Try.setBody(Node: TLapeTree_Base);
