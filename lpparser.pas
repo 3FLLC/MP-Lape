@@ -15,10 +15,10 @@ uses
   Classes, SysUtils,
   lptypes;
 
-{$IFDEF MODERNPASCAL}
+{/$IFDEF MODERNPASCAL}
 var
   GlobalCriticalSection:TRTLCriticalSection; // GLock/GUnlock for Celerity and CodeRunner servers only
-{$ENDIF}
+{/$ENDIF}
 
 type
   EParserToken = (
@@ -234,10 +234,10 @@ type
   public
     constructor Create(AFileName: UnicodeString = ''); reintroduce; overload; virtual;
     constructor Create(AFileName: AnsiString = ''); reintroduce; overload; virtual;
-{$IFDEF MODERNPASCAL}
+{.$IFDEF MODERNPASCAL}
   published
     property Doc;
-{$ENDIF}
+{.$ENDIF}
   end;
 
   TLapeKeyword = record
@@ -1086,7 +1086,8 @@ begin
         end
         else Result:=setTok(tk_Unkown);
 
-{$IFNDEF MODERNPASCAL}
+//{/$IFNDEF MODERNPASCAL}
+{
     //Integer and Float
     '0'..'9':
       begin
@@ -1118,7 +1119,8 @@ begin
           Result := setTok(tk_typ_Float);
         end;
       end;
-{$ELSE}
+}
+//{/$ELSE}
     //Binary, Hexidecimal (C way), Octal, Positive Integer, Float, Exponential
     '0'..'9':begin
         if ((getChar(0)='0') and (getChar(1)='b')) then begin // BINARY:
@@ -1151,35 +1153,33 @@ begin
         end
         else begin
            Char := getChar(1);
-           while (Char in ['0'..'9', '_']) do begin
-              Inc(FPos);
-              Char := getChar(1);
+           while (Char in ['0'..'9', '_']) do
+           begin
+             Inc(FPos);
+             Char := getChar(1);
            end;
-           if (Char <> '.') or (not (getChar(2) in ['0'..'9'])) then Result := setTok(tk_typ_Integer)
-           else begin
-              Inc(FPos, 2);
-              Char := getChar(1);
-              while (Char in ['0'..'9', '_']) do begin
+           if (Char <> '.') or (not (getChar(2) in ['0'..'9'])) then
+             Result := setTok(tk_typ_Integer)
+           else
+           begin
+             Inc(FPos, 2);
+             Char := getChar(1);
+             while (Char in ['0'..'9', '_']) do
+             begin
+               Inc(FPos);
+               Char := getChar(1);
+             end;
+             if (Char in ['e', 'E']) and (getChar(2) in ['+', '-']) and (getChar(3) in ['0'..'9']) then
+             begin
+               Inc(FPos, 3);
+               while (getChar(1) in ['0'..'9', '_']) do
                  Inc(FPos);
-                 Char := getChar(1);
-              end;
-              if (Char in ['e', 'E']) and (getChar(2) in ['+','-','0'..'9']) then begin
-                 Inc(FPos, 2);
-                 while (getChar(1) in ['0'..'9', '_']) do Inc(FPos);
-              end
-              else if (Char='&') and (getChar(2)='&') and (getChar(3) in ['0'..'9']) then begin
-                 Inc(FPos, 3);
-                 while (getChar(1) in ['0'..'9', '_']) do Inc(FPos);
-              end
-              else if (Char in ['&']) and (getChar(3) in ['0'..'9']) then begin
-                 Inc(FPos, 2);
-                 while (getChar(1) in ['0'..'9', '_']) do Inc(FPos);
-              end;
-              Result := setTok(tk_typ_Float);
+             end;
+             Result := setTok(tk_typ_Float);
            end;
          end;
       end;
-{$ENDIF}
+{//$ENDIF}
     '$':
       begin
         if (getChar(1) in ['0'..'9', 'A'..'F', 'a'..'f']) then begin
@@ -1205,12 +1205,6 @@ begin
 {$ELSE}
       '%': if (lcoExtendedSyntax in FOptions) then Result:=setTok(tk_op_MOD)
           else Result := setTok(tk_Unkown);
-//      '"':if (lcoExtendedSyntax in FOptions) then begin
-//           Inc(FPos);
-//           while (not (CurChar in ['"', #0])) do NextPos_CountLines();
-//           Result := setTok(tk_typ_String);
-//         end
-//         else Result := setTok(tk_Unkown);
     #96:if (lcoExtendedSyntax in FOptions) then begin
         Inc(FPos);
         while (not (CurChar in [#96, #0])) do NextPos_CountLines();
@@ -1299,8 +1293,11 @@ begin
       if (CurChar = '}') then
         Argument := ''
       else
+      if (CurChar = '*') then // Ozz
+        Argument := ''
+      else
       begin
-        while (not (getChar(1) in ['}', #0])) do
+        while (not (getChar(1) in ['}', '*', ')',  #0])) do
         begin
           Inc(FPos);
           if CurChar in [#10,#13] then
@@ -1317,7 +1314,7 @@ begin
         Exit(True);
     end
     else
-      while (not (CurChar in ['}', #0])) do
+      while (not (CurChar in ['}', '*', ')',  #0])) do
       begin
         Inc(FPos);
         if CurChar in [#10,#13] then
@@ -1329,7 +1326,7 @@ begin
 
     Result := False;
   finally
-    if (CurChar <> '}') then
+    if (CurChar <> '}') and (CurChar<>'*') then
       LapeExceptionFmt(lpeExpectedOther, [LapeTokenToString(FTok), '}'], DocPos);
   end;
 end;
