@@ -171,7 +171,7 @@ var
     '    if (i > 1) then'                                                                + LineEnding +
     '      Result := Result + '#39', '#39';'                                             + LineEnding +
     '    Result := Result + AToString(Arr);'                                             + LineEnding +
-    '    Inc(Arr, Size);'                                                                + LineEnding +
+    '    intlInc(Arr, Size);'                                                                + LineEnding +
     '  end;'                                                                             + LineEnding +
     '  Result := '#39'['#39'+Result+'#39']'#39';'                                        + LineEnding +
     'end;';
@@ -204,7 +204,7 @@ var
     'begin'                                                                              + LineEnding +
     '  NewSize := NewLen * ElSize;'                                                      + LineEnding +
     '  DoFree := NewSize <= 0;'                                                          + LineEnding +
-    '  Inc(NewSize, HeaderSize);'                                                        + LineEnding +
+    '  intlInc(NewSize, HeaderSize);'                                                        + LineEnding +
     ''                                                                                   + LineEnding +
     '  if (p = nil) then'                                                                + LineEnding +
     '  begin'                                                                            + LineEnding +
@@ -213,30 +213,30 @@ var
     '    p := AllocMem(NewSize);'                                                        + LineEnding +
     ''                                                                                   + LineEnding +
     '    PtrInt(p^) := 1;'                                                               + LineEnding +
-    '    Inc(p, SizeOf(PtrInt));'                                                        + LineEnding +
+    '    intlInc(p, SizeOf(PtrInt));'                                                        + LineEnding +
     '    SizeInt(p^) := NewLen' {$IFDEF FPC}+'-1'{$ENDIF}+';'                            + LineEnding +
-    '    Inc(p, SizeOf(SizeInt));'                                                       + LineEnding +
+    '    intlInc(p, SizeOf(SizeInt));'                                                       + LineEnding +
     '    Exit;'                                                                          + LineEnding +
     '  end;'                                                                             + LineEnding +
     ''                                                                                   + LineEnding +
-    '  Dec(p, SizeOf(SizeInt));'                                                         + LineEnding +
+    '  intlDec(p, SizeOf(SizeInt));'                                                         + LineEnding +
     '  OldLen := p^' {$IFDEF FPC}+'+1'{$ENDIF}+';'                                       + LineEnding +
-    '  Dec(p, SizeOf(PtrInt));'                                                          + LineEnding +
+    '  intlDec(p, SizeOf(PtrInt));'                                                          + LineEnding +
     ''                                                                                   + LineEnding +
     '  if (PtrInt(p^) <= 1) then'                                                        + LineEnding +
     '  begin'                                                                            + LineEnding +
     '    if (NewLen = OldLen) then'                                                      + LineEnding +
     '    begin'                                                                          + LineEnding +
-    '      Inc(p, HeaderSize);'                                                          + LineEnding +
+    '      intlInc(p, HeaderSize);'                                                          + LineEnding +
     '      Exit;'                                                                        + LineEnding +
     '    end;'                                                                           + LineEnding +
     ''                                                                                   + LineEnding +
     '    if (NewLen < OldLen) and (Pointer(Dispose) <> nil) then'                        + LineEnding +
     '    begin'                                                                          + LineEnding +
-    '      Inc(p, HeaderSize);'                                                          + LineEnding +
+    '      intlInc(p, HeaderSize);'                                                          + LineEnding +
     '      for i := NewLen * ElSize to (OldLen - 1) * ElSize with ElSize do'             + LineEnding +
     '        Dispose(p[i]);'                                                             + LineEnding +
-    '      Dec(p, HeaderSize);'                                                          + LineEnding +
+    '      intlDec(p, HeaderSize);'                                                          + LineEnding +
     '    end;'                                                                           + LineEnding +
     ''                                                                                   + LineEnding +
     '    if DoFree then'                                                                 + LineEnding +
@@ -247,16 +247,16 @@ var
     '    end;'                                                                           + LineEnding +
     '    ReallocMem(p, NewSize);'                                                        + LineEnding +
     '    PtrInt(p^) := 1;'                                                               + LineEnding +
-    '    Inc(p, SizeOf(PtrInt));'                                                        + LineEnding +
+    '    intlInc(p, SizeOf(PtrInt));'                                                        + LineEnding +
     '    SizeInt(p^) := NewLen' {$IFDEF FPC}+'-1'{$ENDIF}+';'                            + LineEnding +
-    '    Inc(p, SizeOf(SizeInt));'                                                       + LineEnding +
+    '    intlInc(p, SizeOf(SizeInt));'                                                       + LineEnding +
     ''                                                                                   + LineEnding +
     '    if (NewLen > OldLen) then'                                                      + LineEnding +
     '      FillMem(p[OldLen * ElSize]^, (NewLen - OldLen) * ElSize);'                    + LineEnding +
     '  end'                                                                              + LineEnding +
     '  else'                                                                             + LineEnding +
     '  begin'                                                                            + LineEnding +
-    '    Dec(PtrInt(p^));'                                                               + LineEnding +
+    '    intlDec(PtrInt(p^));'                                                               + LineEnding +
     '    NewP := nil;'                                                                   + LineEnding +
     '    _ArraySetLength(NewP, NewLen, ElSize, Dispose, Copy);'                          + LineEnding +
     ''                                                                                   + LineEnding +
@@ -265,7 +265,7 @@ var
     '      i := NewLen;'                                                                 + LineEnding +
     '    if (i >= 1) then'                                                               + LineEnding +
     '    begin'                                                                          + LineEnding +
-    '      Inc(p, HeaderSize);'                                                          + LineEnding +
+    '      intlInc(p, HeaderSize);'                                                          + LineEnding +
     '      if (Pointer(Copy) = nil) then'                                                + LineEnding +
     '        Move(p^, NewP^, i * ElSize)'                                                + LineEnding +
     '      else for i := (i - 1) * ElSize downto 0 with ElSize do'                       + LineEnding +
@@ -295,7 +295,7 @@ var
     '    Count := Len - Start;'                                                          + LineEnding +
     ''                                                                                   + LineEnding +
     '  _ArraySetLength(Result, Count, ElSize, nil, nil);'                                + LineEnding +
-    '  Inc(p, Start * ElSize);'                                                          + LineEnding +
+    '  intlInc(p, Start * ElSize);'                                                          + LineEnding +
     ''                                                                                   + LineEnding +
     '  if (Pointer(Copy) = nil) then'                                                    + LineEnding +
     '    Move(p^, Result^, Count * ElSize)'                                              + LineEnding +
@@ -327,7 +327,7 @@ var
     '    Count := Len - Start;'                                                          + LineEnding +
     ''                                                                                   + LineEnding +
     '  _ArraySetLength(p, Len, ElSize, Dispose, Copy);'                                  + LineEnding +
-    '  Inc(p, Start * ElSize);'                                                          + LineEnding +
+    '  intlInc(p, Start * ElSize);'                                                          + LineEnding +
     ''                                                                                   + LineEnding +
     '  if (Pointer(Dispose) <> nil) then'                                                + LineEnding +
     '    for i := 0 to (Count - 1) * ElSize with ElSize do'                              + LineEnding +
@@ -336,7 +336,7 @@ var
     '  if (Start + Count < Len) then'                                                    + LineEnding +
     '    Move(p[Count * ElSize]^, p^, (Len - Start - Count) * ElSize);'                  + LineEnding +
     ''                                                                                   + LineEnding +
-    '  Dec(p, Start * ElSize);'                                                          + LineEnding +
+    '  intlDec(p, Start * ElSize);'                                                          + LineEnding +
     '  _ArraySetLength(p, Len-Count, ElSize, nil, nil);'                                 + LineEnding +
     'end;';
 
@@ -366,7 +366,7 @@ var
     '    Count := LenDst - Start;'                                                       + LineEnding +
     ''                                                                                   + LineEnding +
     '  _ArraySetLength(Dst, LenDst + LenSrc, ElSize, Dispose, Copy);'                    + LineEnding +
-    '  Inc(Dst, Start * ElSize);'                                                        + LineEnding +
+    '  intlInc(Dst, Start * ElSize);'                                                        + LineEnding +
     ''                                                                                   + LineEnding +
     '  if (Count <> LenSrc) then'                                                        + LineEnding +
     '  begin'                                                                            + LineEnding +
@@ -390,7 +390,7 @@ var
     '    else for i := 0 to (LenSrc - 1) * ElSize with ElSize do'                        + LineEnding +
     '      Copy(Src[i], Dst[i]);'                                                        + LineEnding +
     ''                                                                                   + LineEnding +
-    '  Dec(Dst, Start * ElSize);'                                                        + LineEnding +
+    '  intlDec(Dst, Start * ElSize);'                                                        + LineEnding +
     '  _ArraySetLength(Dst, LenDst + LenSrc - Count, ElSize, nil, nil);'                 + LineEnding +
     'end;';
 
@@ -882,7 +882,7 @@ begin
     Result := LapeEvalArr[op, Left, Right];
 end;
 
-initialization
+initialization // LapeToStrArr make ThreadSafe, etc.
   ClearToStrArr(LapeToStrArr);
   LoadToStrArr(LapeToStrArr);
 
