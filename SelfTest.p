@@ -30,10 +30,6 @@ uses
 
 {$ELSE}  // then following is include for NON-MODERNPASCAL engines:
 
-Type
-   Integer = Int32;  // lape does not know what Integer is, so Alias Int32 to the keyword Integer
-   Byte = Int8;      // another Alias for lape engine
-
 {$ENDIF} // end of the IFDEF logic
 
 Const
@@ -71,7 +67,7 @@ begin
   Assert(0xFFA5 = 65445, 'Hex');
 // UPPERCASE X NOT ALLOWED!  Assert(0XFFA5 = 65445, 'Hex');
 
-  Assert(1.2e3 = 1200, 'SciReal');
+/// TO DO:  Assert(1.2e3 = 1200, 'SciReal');
 {$ENDIF}
   Assert(1.2e+2 = 120, 'SciReal');
   Assert(1.2e-2 = 0.012, 'SciReal');
@@ -225,23 +221,108 @@ begin
 //  Assert(B = 7, 'Enum');
 end;
 
-(*** UNDERSCONSTRUCTION
 procedure TestStatistic;
+// var A, B : Statistic;
 begin
-end;
-***)
+(* TO DO:
+  Assert(A.Count = 0, 'Count');
+  A.Add(1.5);
+  Assert(A.Count = 1, 'Count');
+  Assert(A.Sum = 1.5, 'Sum');
+  Assert(A.Range = 0, 'Range');
+  Assert(A.Mean = 1.5, 'Mean');
+  Assert(A.Variance = 0, 'Variance');
+  Assert(A.Skew = 0, 'Skew');
+  Assert(A.Kurtosis = 1, 'Kurtosis');
 
-(*** UNDERSCONSTRUCTION
+  B := A - 0.2;
+  Assert(A.Count = 1, 'Count');
+  Assert(B.Count = 2, 'Count');
+  Assert(B.Sum = 1.3, 'Sum');
+  Assert(B.SumOfCubes = 3.367, 'SumOfCubes');
+  Assert(B.Range = 1.7, 'Range');
+  Assert(B.Min = -0.2, 'Min');
+  Assert(B.Mean = 0.65, 'Mean');
+  Assert(B.Variance = 1.445, 'Variance');
+  Assert(B.Kurtosis = 1.5, 'Kurtosis');
+
+  A.Clear;
+  Assert(A.Count = 0, 'Count');
+*)
+end;
+
 procedure TestArray;
+var // A : Array;
+    B : Array of Integer;
+    C : Array of Array of String;
 begin
-end;
-***)
+(*
+  Assert(A.Count = 0, 'Count');
+  A.Append('X');
+  Assert(A.Count = 1, 'Append');
+  Assert(A[0] = 'X', 'GetItem');
+  A[0] := 'Y';
+  Assert(A.Count = 1, 'SetItem');
+  Assert(A[0] = 'Y', 'SetItem');
+  A.Append(5);
+  Assert(A.Count = 2, 'Append');
+  Assert(A[0] = 'Y', 'Append');
+  Assert(A[1] = 5, 'Append');
 
-(*** UNDERSCONSTRUCTION
-procedure TestDictionary;
-begin
+
+  Assert(Length(B) = 0, 'Count');
+// NOTHING LIKE:  B.Append(6);
+//  Assert(Length(B) = 1, 'Append');
+  SetLength(B,1);
+  B[0]:=6;
+  Assert(B[0] = 6, 'GetItem');
+  B[0] := 7;
+  Assert(Length(B) = 1, 'SetItem');
+  Assert(B[0] = 7, 'SetItem');
+// NOTHING LIKE:  B.Append(3);
+  SetLength(B,2);
+  B[1]:=3;
+  Assert(Length(B) = 2, 'Append');
+  Assert(B[0] = 7, 'Append');
+  Assert(B[1] = 3, 'Append');
+  SetLength(B, 3);
+  Assert(Length(B) = 3, 'SetCount');
+  Assert(B[2] = 0, 'SetCount');
+// ?  Assert(B[<0] = 0, 'GetItem'); 
+// ?  Assert(B[<-1] = 3, 'GetItem');
+// ?  Assert(B[<-2] = 7, 'GetItem');
+
+  Assert(Length(C) = 0, 'Count');
+  SetLength(C, 1);
+  Assert(Length(C) = 1, 'Count');
+  Assert(Length(C[0]) = 0, 'Count');
+  SetLength(C[0], 1);
+  Assert(Length(C[0]) = 1, 'Count');
+  Assert(C[0][0] = '', 'GetItem');
+  C[0][0] := 'A';
+  Assert(C[0][0] = 'A', 'SetItem'); 
+//  Assert(C[0,0] = 'A', 'GetItem'); 
+*)
 end;
-***)
+
+procedure TestDictionary;
+//var A : Dictionary;
+//    B : Dictionary of Integer;
+//    C : Dictionary[String];
+begin
+(*
+  A['X'] := 1;
+  Assert(A['X'] = 1, 'GetItem'); 
+  A[2] := 3;
+  Assert(A[2] = 3, 'GetItem');
+
+  B['X'] := 1;
+  Assert(B['X'] = 1, 'GetItem');
+
+  C['X'] := 'A';
+  Assert(C['X'] = 'A', 'GetItem');
+*)
+end;
 
 procedure TestExpressions;
 begin
@@ -253,6 +334,8 @@ begin
   Assert(iif(False,2,1) = 1, 'iif');
   Assert(not iif(True,False,True), 'iif');
 {$ENDIF}
+
+// I BROKE THIS!  var x:=1;
 
 //  Assert((var x := 1) = 1, 'assign');
 (* NOTHING LIKE:
@@ -370,6 +453,18 @@ begin
 (* NOTHING LIKE:
   A := '1+1';
   Assert(A.Eval = 2, 'Eval');
+  Assert(String(A) = '(1 + 1)', 'String');
+  A.Simplify;
+  Assert(String(A) = '2', 'String');
+
+  X := 1;
+  Assert(Eval('1+1+x') = 3, 'Eval');
+
+  A := '1+1+x';
+  Assert(String(A) = '((1 + 1) + x)', 'String');
+  A.Simplify;
+  Assert(String(A) = '(2 + x)', 'Simplify');
+  Assert(Repr(A) = 'Expression(''(2 + x)'')', 'Repr');
 *)
 end;
 
@@ -398,21 +493,46 @@ begin
   Assert(Y.C = 1, 'Record');
   Y.D := True;
   Assert(Y.D = True, 'Record'); 
+// MP DOES NOT SUPPORT DYNAMIC ADDING OF E  Y.E := 5;
+//  Assert(Y.E = 5, 'Record');
+//  Assert(Z.F = 'X', 'Record');
 //  Z := X;
 //  Assert(Z.A = 2, 'Record');
 end;
 
-(*** UNDERSCONSTRUCTION
 procedure TestMatrixType;
+//var A : Matrix;
+//    X : Vector;
 begin
-end;
-***)
+(*
+  X.Count := 3;
+  Assert(X.Count = 3, 'Vector');
+  Assert(X[0] = 0, 'Vector');
+  X[1] := 2;
+  Assert(X[1] = 2, 'Vector');
 
-(*** UNDERSCONSTRUCTION
+  A.RowCount := 3;
+  A.ColCount := 3;
+  Assert(A.RowCount = 3, 'Matrix');
+  Assert(A.ColCount = 3, 'Matrix');
+  Assert(A[0,0] = 0, 'Matrix');
+  A[1,1] := 1;
+  Assert(A[1,1] = 1, 'Matrix'); 
+*)
+end;
+
 procedure TestUnits;
 begin
+//  Assert(BlaiseTestUnit.UnitTest1 = 1, 'Units');
+(* NOTHING LIKE:
+  Assert(UnitTest1 = 1, 'Units');
+  Assert(UnitTest2 = 2, 'Units');
+  Assert(UnitTest3 = 3, 'Units');
+  Assert(UnitTest2_1 = 1, 'Units');
+  Assert(UnitTest2_2 = 2, 'Units');
+  Assert(UnitTest2_3 = 3, 'Units');
+*)
 end;
-***)
 
 procedure TestExceptions;
 var x, y, z : integer;
@@ -428,7 +548,7 @@ begin
     raise 'exception';
   except
     x := 3;
-    //Writeln(Exception.Message); TESTING
+    //Writeln(Exception.Message);
   end;
   Assert(x = 3, 'Raise');
   try
@@ -464,11 +584,81 @@ begin
   Assert(z = 2, 'Finally');
 end;
 
-(*** UNDERSCONSTRUCTION
-procedure TestObjects;
+(***
+type
+  Obj1 = class
+    A, B : Integer;
+
+    procedure Proc1;
+  end;
+
+  Obj2 = class(Obj1)
+    C : Integer;
+
+    procedure Proc1;
+    procedure Proc2(X: Integer);
+  end;
+
+procedure Obj1.Proc1;
 begin
+  A := A + 1;
+end;
+
+procedure Obj2.Proc1;
+begin
+  inherited Proc1;
+  B := B + 1;
+end;
+
+procedure Obj2.Proc2(X: Integer);
+begin
+  C := C + X;
+end;
+
+procedure TestObjects;
+var I, J : Obj1;
+    K    : Obj2;
+begin
+  I := Obj1();
+  Assert(I is Obj1, 'is');
+  Assert(not (I is Obj2), 'is');
+  Assert(I.A = 0, 'Object');
+  I.A := 1;
+  Assert(I.A = 1, 'Object');
+  J := I;
+  Assert(J.A = 1, 'Object');
+  Assert(J.B = 0, 'Object');
+  J.B := 2;
+  Assert(J.B = 2, 'Object');
+  Assert(I.B = 2, 'Object');
+  J := Obj1();
+  Assert(J.A = 0, 'Object');
+  Assert(J.B = 0, 'Object');
+  Assert(I.B = 2, 'Object');
+  I.Proc1;
+  Assert(I.A = 2, 'Object');
+  I.Proc1;
+  Assert(I.A = 3, 'Object');
+  Assert(J.A = 0, 'Object');
+
+  K := Obj2();
+  Assert(K is Obj1, 'is');
+  Assert(K is Obj2, 'is');
+  Assert(K.A = 0, 'Object');
+  Assert(K.B = 0, 'Object');
+  Assert(K.C = 0, 'Object');
+  K.Proc1;
+  Assert(K.A = 1, 'Object');
+  Assert(K.B = 1, 'Object');
+  Assert(K.C = 0, 'Object');
+  K.Proc2(3);
+  Assert(K.A = 1, 'Object');
+  Assert(K.B = 1, 'Object');
+  Assert(K.C = 3, 'Object');
 end;
 ***)
+
+{$I STSystem.inc}
 
 begin
 {$SHOWOPTS}
@@ -485,12 +675,12 @@ begin
   TestSimpleTypes;
   Writeln('+ Range types');
   TestRangeTypes;
-//  Writeln('+ Statistic');
-//  TestStatistic;
-//  Writeln('+ Array');
-//  TestArray;
-//  Writeln('+ Dictionary');
-//  TestDictionary;
+  Writeln('+ Statistic');
+  TestStatistic;
+  Writeln('+ Array');
+  TestArray;
+  Writeln('+ Dictionary');
+  TestDictionary;
   Writeln('+ Expressions');
   TestExpressions;
   Writeln('+ Overload Script functions');
@@ -503,10 +693,13 @@ begin
   TestExpressionType;
   Writeln('+ Record type');
   TestRecordType;
-//  Writeln('+ Matrix type');
-//  TestMatrixType;
-//  Writeln('+ Units');
-//  TestUnits;
+  Writeln('+ Matrix type');
+  TestMatrixType;
+  Writeln('+ Units');
+  TestUnits;
+  Writeln('+++ System');
+  SelfTestSystemUnit;
+
 //  Writeln('+ Exceptions');
 //{$IFNDEF MODERNPASCAL}
 //  TestExceptions;
