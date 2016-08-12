@@ -15,10 +15,8 @@ uses
   Classes, SysUtils,
   lptypes;
 
-{/$IFDEF MODERNPASCAL}
 var
   GlobalCriticalSection:TRTLCriticalSection; // GLock/GUnlock for Celerity and CodeRunner servers only
-{/$ENDIF}
 
 type
   EParserToken = (
@@ -234,10 +232,8 @@ type
   public
     constructor Create(AFileName: UnicodeString = ''); reintroduce; overload; virtual;
     constructor Create(AFileName: AnsiString = ''); reintroduce; overload; virtual;
-{.$IFDEF MODERNPASCAL}
   published
     property Doc;
-{.$ENDIF}
   end;
 
   TLapeKeyword = record
@@ -908,7 +904,7 @@ begin
       end;
 
     //Compare Operators
-    '=': if (lcoExtendedSyntax in FOptions) then begin
+    '=': if (lcoLooseSyntax in FOptions) then begin
             if (getChar(1)='=') then begin
                Result := setTok(tk_sym_Equals);
                Inc(FPos);
@@ -916,7 +912,7 @@ begin
             else Result := setTok(tk_sym_Equals);
          end
          else Result := setTok(tk_sym_Equals);
-    '>': // if (lcoExtendedSyntax in FOptions) then support >> SHR
+    '>': // if (lcoLooseSyntax in FOptions) then support >> SHR
       begin
         if (getChar(1) = '=') then
         begin
@@ -926,7 +922,7 @@ begin
         else
           Result := setTok(tk_cmp_GreaterThan);
       end;
-    '<': // if (lcoExtendedSyntax in FOptions) then support << SHL
+    '<': // if (lcoLooseSyntax in FOptions) then support << SHL
       begin
         case getChar(1) of
           '=':
@@ -943,7 +939,7 @@ begin
             Result := setTok(tk_cmp_LessThan);
         end;
       end;
-    '!':if (lcoExtendedSyntax in FOptions) then begin
+    '!':if (lcoLooseSyntax in FOptions) then begin
            if (getChar(1)='=') then begin
               Result := setTok(tk_cmp_NotEqual);
               Inc(FPos);
@@ -1075,52 +1071,17 @@ begin
           Result := setTok(tk_Comment);
         end;
       end;
-    '|':if (lcoExtendedSyntax in FOptions) then begin // || logical or
+    '|':if (lcoLooseSyntax in FOptions) then begin // || logical or
            if (getChar(1)='|') then Result:=setTok(tk_op_OR)
            else Result:=setTok(tk_Unkown);
         end
         else Result:=setTok(tk_Unkown);
-    '&':if (lcoExtendedSyntax in FOptions) then begin // && logical and
+    '&':if (lcoLooseSyntax in FOptions) then begin // && logical and
            if (getChar(1)='&') then Result:=setTok(tk_op_AND)
            else Result:=setTok(tk_op_Plus); // Modula3
         end
         else Result:=setTok(tk_Unkown);
 
-//{/$IFNDEF MODERNPASCAL}
-{
-    //Integer and Float
-    '0'..'9':
-      begin
-        Char := getChar(1);
-        while (Char in ['0'..'9', '_']) do
-        begin
-          Inc(FPos);
-          Char := getChar(1);
-        end;
-
-        if (Char <> '.') or (not (getChar(2) in ['0'..'9'])) then
-          Result := setTok(tk_typ_Integer)
-        else
-        begin
-          Inc(FPos, 2);
-          Char := getChar(1);
-          while (Char in ['0'..'9', '_']) do
-          begin
-            Inc(FPos);
-            Char := getChar(1);
-          end;
-          if (Char in ['e', 'E']) and (getChar(2) in ['+', '-']) and (getChar(3) in ['0'..'9']) then
-          begin
-            Inc(FPos, 3);
-            while (getChar(1) in ['0'..'9', '_']) do
-              Inc(FPos);
-          end;
-
-          Result := setTok(tk_typ_Float);
-        end;
-      end;
-}
-//{/$ELSE}
     //Binary, Hexidecimal (C way), Octal, Positive Integer, Float, Exponential
     '0'..'9':begin
         if ((getChar(0)='0') and (getChar(1)='b')) then begin // BINARY:
@@ -1162,14 +1123,15 @@ begin
              Result := setTok(tk_typ_Integer)
            else
            begin
-             Inc(FPos, 2);
+             //Inc(FPos, 2);
+             Inc(FPos);
              Char := getChar(1);
              while (Char in ['0'..'9', '_']) do
              begin
                Inc(FPos);
                Char := getChar(1);
              end;
-             if (Char in ['e', 'E']) and (getChar(2) in ['+', '-']) and (getChar(3) in ['0'..'9']) then
+             if (Char in ['e', 'E']) and (getChar(2) in ['+', '-', '0'..'9']) then
              begin
                Inc(FPos, 3);
                while (getChar(1) in ['0'..'9', '_']) do
@@ -1179,7 +1141,6 @@ begin
            end;
          end;
       end;
-{//$ENDIF}
     '$':
       begin
         if (getChar(1) in ['0'..'9', 'A'..'F', 'a'..'f']) then begin
@@ -1190,7 +1151,7 @@ begin
         else
           Result := setTok(tk_Unkown);
       end;
-{$IFNDEF MODERNPASCAL}
+{$IFDEF LAPE}
     '%':
       begin
         if (getChar(1) in ['0'..'1']) then
@@ -1203,27 +1164,27 @@ begin
           Result := setTok(tk_Unkown);
       end;
 {$ELSE}
-      '%': if (lcoExtendedSyntax in FOptions) then Result:=setTok(tk_op_MOD)
+      '%': if (lcoLooseSyntax in FOptions) then Result:=setTok(tk_op_MOD)
           else Result := setTok(tk_Unkown);
-    #96:if (lcoExtendedSyntax in FOptions) then begin
+{$ENDIF}
+    #96:if (lcoLooseSyntax in FOptions) then begin
         Inc(FPos);
         while (not (CurChar in [#96, #0])) do NextPos_CountLines();
         Result := setTok(tk_typ_String);
       end
          else Result := setTok(tk_Unkown);
-    #145:if (lcoExtendedSyntax in FOptions) then begin
+    #145:if (lcoLooseSyntax in FOptions) then begin
         Inc(FPos);
         while (not (CurChar in [#145, #146, #0])) do NextPos_CountLines();
         Result := setTok(tk_typ_String);
       end
          else Result := setTok(tk_Unkown);
-    #147:if (lcoExtendedSyntax in FOptions) then begin
+    #147:if (lcoLooseSyntax in FOptions) then begin
         Inc(FPos);
         while (not (CurChar in [#147, #148, #0])) do NextPos_CountLines();
         Result := setTok(tk_typ_String);
       end
          else Result := setTok(tk_Unkown);
-{$ENDIF}
     'A'..'Z', '_', 'a'..'z': Result := Alpha();
     #34: //heredoc string
       begin
@@ -1653,32 +1614,8 @@ begin
 end;
 
 constructor TLapeTokenizerFile.Create(AFileName: AnsiString = ''); // Ozz
-var
-   BFH:File;
-   Ws,Buf:String;
-   Nr:Longint;
-
 begin
-   Assign(BFH, AFileName);
-   {$I-} System.Reset(BFH, 1); {$I+}
-   If IOResult=0 then begin
-      Nr:=4096;
-      SetLength(Ws,Nr);
-      SetLength(Buf,0);
-      While Nr=4096 do begin
-         {$I-} BlockRead(BFH, Ws[1], 4096, Nr); {$I+}
-         Buf:=Buf+Copy(Ws,1,Nr);
-      End;
-      SetLength(Ws,0);
-      try
-         inherited Create(Buf, AFileName);
-      finally
-         SetLength(Buf,0);
-      end;
-      Close(BFH);
-   End;
-//begin
-//  Create(UnicodeString(AFileName));
+   Create(UnicodeString(AFileName));
 end;
 
 initialization
