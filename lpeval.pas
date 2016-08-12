@@ -82,6 +82,8 @@ procedure _LapeToString_Single(const Params: PParamArray; const Result: Pointer)
 procedure _LapeToString_Double(const Params: PParamArray; const Result: Pointer); {$IFDEF Lape_CDECL}cdecl;{$ENDIF}
 procedure _LapeToString_Currency(const Params: PParamArray; const Result: Pointer); {$IFDEF Lape_CDECL}cdecl;{$ENDIF}
 procedure _LapeToString_Extended(const Params: PParamArray; const Result: Pointer); {$IFDEF Lape_CDECL}cdecl;{$ENDIF}
+procedure _LapeToString_Extended2(const Params: PParamArray; const Result: Pointer); {$IFDEF Lape_CDECL}cdecl;{$ENDIF}
+procedure _LapeToString_Extended3(const Params: PParamArray; const Result: Pointer); {$IFDEF Lape_CDECL}cdecl;{$ENDIF}
 procedure _LapeToString_Boolean(const Params: PParamArray; const Result: Pointer); {$IFDEF Lape_CDECL}cdecl;{$ENDIF}
 procedure _LapeToString_ByteBool(const Params: PParamArray; const Result: Pointer); {$IFDEF Lape_CDECL}cdecl;{$ENDIF}
 procedure _LapeToString_WordBool(const Params: PParamArray; const Result: Pointer); {$IFDEF Lape_CDECL}cdecl;{$ENDIF}
@@ -441,8 +443,9 @@ end;
 
 procedure _LapeAssertMsg(const Params: PParamArray); {$IFDEF Lape_CDECL}cdecl;{$ENDIF}
 begin
-  if (not PEvalBool(Params^[0])^) then
+  if (not PEvalBool(Params^[0])^) then begin
     LapeExceptionFmt(lpeAssertionFailureMsg, [PlpString(Params^[1])^]);
+  End;
 end;
 
 procedure _LapeRangeCheck(const Params: PParamArray); {$IFDEF Lape_CDECL}cdecl;{$ENDIF}
@@ -687,6 +690,14 @@ end;
 procedure _LapeToString_Extended(const Params: PParamArray; const Result: Pointer); {$IFDEF Lape_CDECL}cdecl;{$ENDIF}
 begin
   PlpString(Result)^ := lpString(FloatToStr(PExtended(Params^[0])^));
+end;
+procedure _LapeToString_Extended2(const Params: PParamArray; const Result: Pointer); {$IFDEF Lape_CDECL}cdecl;{$ENDIF}
+begin
+  PlpString(Result)^ := lpString(FloatToStrF(PExtended(Params^[0])^, ffFixed, pLongint(Params^[1])^, pLongint(Params^[2])^));
+end;
+procedure _LapeToString_Extended3(const Params: PParamArray; const Result: Pointer); {$IFDEF Lape_CDECL}cdecl;{$ENDIF}
+begin
+  PlpString(Result)^ := lpString(FloatToStrF(PExtended(Params^[0])^, ffNumber, pLongint(Params^[1])^, pLongint(Params^[2])^));
 end;
 
 procedure _LapeToString_Boolean(const Params: PParamArray; const Result: Pointer); {$IFDEF Lape_CDECL}cdecl;{$ENDIF}
