@@ -61,9 +61,7 @@ type
     OldState: Pointer;
   end;
 
-{/$IFDEF MODERNPASCAL}
    {$I includes/lpcompiler.001}
-{/$ENDIF}
 
   TLapeCompiler = class(TLapeCompilerBase)
   private
@@ -98,7 +96,7 @@ type
     FAfterParsing: TLapeCompilerNotification;
 
     function getDocPos: TDocPos; override;
-    procedure Reset{/$IFDEF MODERNPASCAL}(KeepUnits:Boolean){/$ENDIF}; override;
+    procedure Reset(KeepUnits:Boolean); override;
 
     function getImporting: Boolean; virtual;
     procedure setImporting(Import: Boolean); virtual;
@@ -164,10 +162,9 @@ type
   public
     FreeTokenizer: Boolean;
     FreeTree: Boolean;
+    DoContinue:TInitBool;
 
-{/$IFDEF MODERNPASCAL}
    {$I includes/lpcompiler.002}
-{/$ENDIF}
 
     constructor Create(
       ATokenizer: TLapeTokenizerBase; ManageTokenizer: Boolean = True;
@@ -192,7 +189,7 @@ type
     function ParseFile: TLapeTree_Base; virtual;
     procedure EmitCode(ACode: lpString; var Offset: Integer; Pos: PDocPos = nil); override;
 
-    function Compile{/$IFDEF MODERNPASCAL}(KeepUnits:Boolean){/$ENDIF}: Boolean; virtual;
+    function Compile(KeepUnits:Boolean): Boolean; virtual;
     procedure CheckAfterCompile; virtual;
 
     procedure VarToDefault(AVar: TResVar; var Offset: Integer; Pos: PDocPos = nil); override;
@@ -235,10 +232,9 @@ type
     function addGlobalType(Typ: TLapeType; AName: lpString = ''; ACopy: Boolean = True): TLapeType; overload; virtual;
     function addGlobalType(Str: lpString; AName: lpString): TLapeType; overload; virtual;
 
-{/$IFDEF MODERNPASCAL} // Ozz with my RTL size this decreased parse time by 200+ ms
     function addGlobalFunction(AHeader: lpString; Value: Pointer): TLapeGlobalVar;
     function addGlobalProcedure(AHeader: lpString; Value: Pointer): TLapeGlobalVar;
-{/$ENDIF}
+
     function addGlobalFunc(AHeader: lpString; Value: Pointer): TLapeGlobalVar; overload; virtual;
     function addGlobalFunc(AHeader: TLapeType_Method; AName, Body: lpString): TLapeTree_Method; overload; virtual;
     function addGlobalFunc(AParams: array of TLapeType; AParTypes: array of ELapeParameterType; AParDefaults: array of TLapeGlobalVar; ARes: TLapeType; Value: Pointer; AName: lpString): TLapeGlobalVar; overload; virtual;
@@ -267,16 +263,12 @@ type
   end;
 
   TLapeType_SystemUnit = class(TLapeType)
-{/$IFDEF MODERNPASCAL}
   private
      Methods:TLapeStringList;  
-{/$ENDIF}
   public
     constructor Create(ACompiler: TLapeCompilerBase); reintroduce; virtual;
-{/$IFDEF MODERNPASCAL}
     destructor Destroy; override;
     function AddMethod(AMethodName: lpString): Boolean;
-{/$ENDIF}
     procedure ClearSubDeclarations; override;
 
     function CanHaveChild: Boolean; override;
@@ -291,17 +283,13 @@ type
 implementation
 
 uses
-{/$IFDEF MODERNPASCAL}
   dxutil_environment, dxutil_string, Math, DynLibs,
-{/$ENDIF}
   CRT, Variants,
   {$IFDEF Lape_NeedAnsiStringsUnit}AnsiStrings,{$ENDIF}
   lpvartypes_ord, lpvartypes_record, lpvartypes_array,
   lpexceptions, lpeval, lpinterpreter;
 
-{/$IFDEF MODERNPASCAL}
-   {$I includes/lpcompiler.003}
-{/$ENDIF}
+{$I includes/lpcompiler.003}
 
 function TLapeCompiler.getPDocPos: PDocPos;
 begin
@@ -355,13 +343,11 @@ begin
     Result := NullDocPos;
 end;
 
-procedure TLapeCompiler.Reset{/$IFDEF MODERNPASCAL}(KeepUnits:Boolean){/$ENDIF};
+procedure TLapeCompiler.Reset(KeepUnits:Boolean);
 begin
   inherited;
   EndImporting();
-{/$IFDEF MODERNPASCAL}
   if not KeepUnits then setLength(loadedUnits,0);
-{/$ENDIF}
   FOptions := FBaseOptions;
   FOptions_PackRecords := FBaseOptions_PackRecords;
 
@@ -410,7 +396,7 @@ procedure TLapeCompiler.setBaseDefines(Defines: TStringList);
 begin
   Assert(FBaseDefines <> nil);
   FBaseDefines.Assign(Defines);
-  Reset({/$IFDEF MODERNPASCAL}False{/$ENDIF});
+  Reset(False);
 end;
 
 function TLapeCompiler.getTokenizer: TLapeTokenizerBase;
@@ -629,17 +615,12 @@ begin
     FreeAndNil(Result);
 end;
 
-{/$IFDEF MODERNPASCAL}
 {$I includes/pascal.inc}
 
 procedure TLapeCompiler.InitBaseDefinitions;
 var
    NameSpace:PNamespaceRec;
    ThisUnit:TLapeType_SystemUnit;
-
-{/$ELSE}
-//procedure TLapeCompiler.InitBaseDefinitions;
-{/$ENDIF}
 
   procedure addCompilerFuncs;
   const
@@ -702,26 +683,26 @@ var
   end;
 
 begin
-{/$IFNDEF MODERNPASCAL}
-//  addBaseDefine('Lape');
-//  addBaseDefine('Sesquipedalian');
-//  {$IFDEF Lape_CaseSensitive}
-//  addBaseDefine('Lape_CaseSensitive');
-//  {$ELSE}
-//  addBaseDefine('Lape_CaseInsensitive');
-//  {$ENDIF}
-//  {$IFDEF Lape_PascalLabels}
-//  addBaseDefine('Lape_PascalLabels');
-//  {$ELSE}
-//  addBaseDefine('Lape_LapeLabels');
-//  {$ENDIF}
-//  {$IFDEF Lape_Unicode}
-//  addBaseDefine('Lape_Unicode');
-//  {$ELSE}
-//  addBaseDefine('Lape_Ansi');
-//  {$ENDIF}
-//  addGlobalVar(addManagedType(TLapeType_SystemUnit.Create(Self)).NewGlobalVarP(nil), 'System').isConstant := True;
-{/$ELSE}
+{$IFDEF LAPE}
+  addBaseDefine('Lape');
+  addBaseDefine('Sesquipedalian');
+  {$IFDEF Lape_CaseSensitive}
+  addBaseDefine('Lape_CaseSensitive');
+  {$ELSE}
+  addBaseDefine('Lape_CaseInsensitive');
+  {$ENDIF}
+  {$IFDEF Lape_PascalLabels}
+  addBaseDefine('Lape_PascalLabels');
+  {$ELSE}
+  addBaseDefine('Lape_LapeLabels');
+  {$ENDIF}
+  {$IFDEF Lape_Unicode}
+  addBaseDefine('Lape_Unicode');
+  {$ELSE}
+  addBaseDefine('Lape_Ansi');
+  {$ENDIF}
+  addGlobalVar(addManagedType(TLapeType_SystemUnit.Create(Self)).NewGlobalVarP(nil), 'System').isConstant := True;
+{$ELSE}
   addBaseDefine('MODERNPASCAL');
   addBaseDefine('MPC');
 {$IFDEF CODERUNNER}addBaseDefine('CODERUNNER');{$ENDIF}
@@ -755,10 +736,10 @@ begin
   Self.NameSpaces.Add(NameSpace);
 //System.Writeln('lpcompiler Namespace system');
   addGlobalVar(addManagedType(ThisUnit).NewGlobalVarP(nil), 'system').isConstant := True;
-{/$ENDIF}
+{$ENDIF}
   addCompilerFuncs();
 
-{$IFDEF MODERNPASCAL}
+{$IFDEF MODERNPASCAL} // MP2 SYSTEM
   Register_Pascal(Self);
 {$ELSE}
 
@@ -824,13 +805,6 @@ begin
   addToString();
   addGlobalVar(NewMagicMethod({$IFDEF FPC}@{$ENDIF}GetDisposeMethod).NewGlobalVar('_Dispose'));
   addGlobalVar(NewMagicMethod({$IFDEF FPC}@{$ENDIF}GetCopyMethod).NewGlobalVar('_Assign'));
-
-{/$IFNDEF MODERNPASCAL}
-//  {$I includes/lpeval_import_math.inc}
-//  {$I includes/lpeval_import_string.inc}
-//  {$I includes/lpeval_import_datetime.inc}
-//  {$I includes/lpeval_import_variant.inc}
-{/$ENDIF}
 
   addDelayedCode(
     LapeDelayedFlags +
@@ -1135,17 +1109,17 @@ begin
   end
   else if (Directive = 'i') or (Directive = 'include') or (Directive = 'include_once') then
   begin
-{$IFDEF MODERNPASCAL_INDEVELOPMENT}
+{/$IFDEF MODERNPASCAL_INDEVELOPMENT}
     if (Directive = 'i') then begin
        If (Argument='on') or (Argument='+') then begin // $I+
-          exit;
+          exit(True);
        end
        else if (Argument='off') or (Argument='-') then begin // $I-
-          exit;
+          exit(True);
        end
     end;
-{$ENDIF}
-    IncludeFile := Argument;
+{/$ENDIF}
+    IncludeFile := Trim(Argument); // Ozz
     if ({$IFNDEF FPC}@{$ENDIF}FOnFindFile <> nil) then
       NewTokenizer := FOnFindFile(Self, IncludeFile);
 
@@ -1160,7 +1134,7 @@ begin
     if (Directive = 'include_once') and (FIncludes.IndexOf(string(IncludeFile)) > -1) then
       Exit(True)
     else if (not Sender.InPeek) then
-      FIncludes.Add(string(IncludeFile));
+      FIncludes.Add(string(IncludeFile)); // include filename is stored, could be used to do {$ifinclude} {$else} {$ifninclude} {$endif}
 
     if (NewTokenizer = nil) then
       if (FTokenizer + 1 < Length(FTokenizers)) and (FTokenizers[FTokenizer + 1] <> nil) and (FTokenizers[FTokenizer + 1].FileName = IncludeFile) then
@@ -3398,12 +3372,10 @@ constructor TLapeCompiler.Create(
   AEmitter: TLapeCodeEmitter = nil; ManageEmitter: Boolean = True);
 begin
   inherited Create(AEmitter, ManageEmitter);
-{/$IFDEF MODERNPASCAL}
   HostObjects:=TList.Create;
   Namespaces:=TList.Create;
   SetLength(DLLHandles,0);
   SetLength(ChainArr,0);
-{/$ENDIF}
 
   FTokenizer := -1;
   FImporting := nil;
@@ -3457,11 +3429,11 @@ begin
   FInternalMethodMap['Copy'] := TLapeTree_InternalMethod_Copy;
   FInternalMethodMap['Delete'] := TLapeTree_InternalMethod_Delete;
   FInternalMethodMap['Insert'] := TLapeTree_InternalMethod_Insert;
-{/$IFNDEF MODERNPASCAL}
+
   FInternalMethodMap['intlOrd'] := TLapeTree_InternalMethod_Ord;
   FInternalMethodMap['intlInc'] := TLapeTree_InternalMethod_Inc;
   FInternalMethodMap['intlDec'] := TLapeTree_InternalMethod_Dec;
-{/$ENDIF}
+
   FInternalMethodMap['Succ'] := TLapeTree_InternalMethod_Succ;
   FInternalMethodMap['Pred'] := TLapeTree_InternalMethod_Pred;
 
@@ -3471,16 +3443,12 @@ begin
   FInternalMethodMap['raise'] := TLapeTree_InternalMethod_Raise;
 
   setTokenizer(ATokenizer);
-  Reset({/$IFDEF MODERNPASCAL}False{/$ENDIF});
+  Reset(False);
 
   StartImporting();
-{.$IFNDEF MODERNPASCAL}
-//  InitBaseDefinitions(); // Testing
-{.$ENDIF}
 end;
 
 destructor TLapeCompiler.Destroy;
-{/$IFDEF MODERNPASCAL}
 Var
    HostObjectRec:PHostObjectRec;
    NamespaceRec:PNamespaceRec;
@@ -3505,9 +3473,6 @@ begin
      NameSpaces.Delete(0);
   End;
   FreeAndNil(NameSpaces);
-{/$ELSE}
-//begin
-{/$ENDIF}
   EndImporting();
   setTokenizer(nil);
   if FreeTree and (FDelayedTree <> nil) then
@@ -3519,8 +3484,8 @@ begin
   FreeAndNil(FAfterParsing);
   FreeAndNil(FTreeMethodMap);
   FreeAndNil(FInternalMethodMap);
-{$IFDEF MODERNPASCAL}
-//??  FreeAndNil(FTree); //1160526 Ozz
+{$IFDEF MODERNPASCAL} // FreeAndNill(FTree)?
+  FreeAndNil(FTree); //1160526 Ozz
 {$ENDIF}
   inherited;
 end;
@@ -3579,11 +3544,9 @@ begin
       end;
     end;
 
-{.$IFNDEF MODERNPASCAL}
     FOptions := Options;
     FOptions_PackRecords := Options_PackRecords;
     FDefines.Text := Defines;
-{.$ENDIF}
     FConditionalStack.ImportFromArray(Conditionals);
   end;
   if DoFreeState then
@@ -3712,16 +3675,6 @@ begin
     if (FDefines <> nil) and (FBaseDefines <> nil) then
       FDefines.Assign(FBaseDefines);
 
-{$IFNDEF MODERNPASCAL}
-    if (Next() = tk_kw_Program) then
-    begin
-      Expect(tk_Identifier, True, True);
-      ParseExpressionEnd(tk_sym_SemiColon);
-      Result := ParseBlockList(False);
-    end
-    else
-      Result := ParseBlockList(False);
-{$ELSE}
     if (Next() = tk_kw_Program) then begin
       Expect(tk_Identifier, True, True);
       // support program name.version;
@@ -3744,7 +3697,6 @@ begin
       end;
       Result := ParseBlockList(False);
     End;
-{$ENDIF}
 
     CheckAfterCompile();
   except
@@ -3783,27 +3735,19 @@ begin
   end;
 end;
 
-function TLapeCompiler.Compile{/$IFDEF MODERNPASCAL}(KeepUnits:Boolean){/$ENDIF}: Boolean;
-{/$IFDEF MODERNPASCAL}
+function TLapeCompiler.Compile(KeepUnits:Boolean): Boolean;
 Var
    I:Longint;
    Identifiers: TStringArray;
    HostObjectRec:PHostObjectRec;
-{/$ENDIF}
 
 begin
   Result := False;
   try
 
-{/$IFDEF MODERNPASCAL}
     Reset(KeepUnits);
-/// Testing    InitBaseDefinitions(); // 1150609 OZZ
-{/$ELSE}
-//    Reset();
-{/$ENDIF}
     InitBaseDefinitions(); // 1150609 OZZ
     IncStackInfo(True);
-{/$IFDEF MODERNPASCAL}
 // LOAD PREDEFINED UNITS:
     If KeepUnits then Begin
        Identifiers:=loadedUnits;
@@ -3820,7 +3764,7 @@ begin
        HostObjectRec:=PHostObjectRec(HostObjects[I]);
        addGlobalVar(HostObjectRec^.TypeName, HostObjectRec^.CallBack, HostObjectRec^.VarName);
     End;
-{/$ENDIF}
+
     FTree := ParseFile();
     if (FTree = nil) and (FDelayedTree.GlobalCount(False) <= 0) then
       LapeException(lpeExpressionExpected+'4');
@@ -3842,7 +3786,7 @@ begin
     Result := True;
 
   except
-    Reset({/$IFDEF MODERNPASCAL}False{/$ENDIF});
+    Reset(False);
     raise;
   end;
 end;
@@ -4180,7 +4124,6 @@ begin
   end;
 end;
 
-{/$IFDEF MODERNPASCAL}
 function TLapeCompiler.addGlobalFunction(AHeader: lpString; Value: Pointer): TLapeGlobalVar;
 begin
    Result:=AddGlobalFunc('function '+AHeader, Value);
@@ -4190,7 +4133,6 @@ function TLapeCompiler.addGlobalProcedure(AHeader: lpString; Value: Pointer): TL
 begin
    Result:=AddGlobalFunc('procedure '+AHeader, Value);
 end;
-{/$ENDIF}
 
 function TLapeCompiler.addGlobalFunc(AHeader: lpString; Value: Pointer): TLapeGlobalVar;
 var
@@ -4322,11 +4264,10 @@ begin
 
   if (ACompiler <> nil) then begin
     ManagedDeclarations := ACompiler.GlobalDeclarations;
-    {/$IFDEF MODERNPASCAL}Methods:=TLapeStringList.Create('',dupAccept,False,True);{/$ENDIF}
+    Methods:=TLapeStringList.Create('',dupAccept,False,True);
   End;
 end;
 
-{/$IFDEF MODERNPASCAL}
 Destructor TLapeType_SystemUnit.Destroy;
 begin
    Methods.Free;
@@ -4340,7 +4281,6 @@ begin
      Methods.Add(LowerCase(AMethodName));
   End;
 end;
-{/$ENDIF}
 
 procedure TLapeType_SystemUnit.ClearSubDeclarations;
 begin
@@ -4353,11 +4293,7 @@ end;
 
 function TLapeType_SystemUnit.HasChild(AName: lpString): Boolean;
 begin
-{/$IFDEF MODERNPASCAL}
   Result := CanHaveChild() and (Methods.IndexOf(Lowercase(AName))>-1) and FCompiler.hasDeclaration(AName, nil);
-{/$ELSE}
-//  Result := CanHaveChild() and FCompiler.hasDeclaration(AName, nil);
-{/$ENDIF}
 end;
 
 function TLapeType_SystemUnit.HasChild(ADecl: TLapeDeclaration): Boolean;
