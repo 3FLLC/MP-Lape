@@ -29,7 +29,6 @@ type // was in LPVARTYPES Ozz
     lcoConstAddress,                   // {$J} {$CONSTADDRESS}
     lcoContinueCase,                   //      {$CONTINUECASE}
     lcoCOperators,                     //      {$COPERATORS}
-    lcoExtendedSyntax,                 //      {$EXTENDEDSYNTAX}
     lcoInitExternalResult              // Ensure empty result for external calls (useful for ffi)
   );
   ECompilerOptionsSet = set of ECompilerOption;
@@ -118,7 +117,7 @@ type
   TStringArray = array of lpString;
   TByteArray = array of Byte;
   TIntegerArray = array of Integer;
-  TInitBool = (bUnknown, bFalse, bTrue{/$IFDEF MODERNPASCAL},bChain{/$ENDIF});
+  TInitBool = (bUnknown, bFalse, bTrue, bChain);
 
   TCodeArray = TByteArray;
   PCodeArray = ^TCodeArray;
