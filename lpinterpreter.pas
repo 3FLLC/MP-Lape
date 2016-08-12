@@ -85,8 +85,7 @@ const
   TryStackSize = 512;
   CallStackSize = 512;
 
-procedure RunCode(Compiler:TObject; Code: PByte; var DoContinue: TInitBool; InitialVarStack: TByteArray = nil; InitialJump: TCodePos = 0); overload;
-procedure RunCode(Compiler:TObject; Code: PByte; InitialVarStack: TByteArray = nil; InitialJump: TCodePos = 0); overload;
+procedure RunCode(Compiler:TObject; Code: PByte; InitialVarStack: TByteArray = nil; InitialJump: TCodePos = 0);
 
 implementation
 
@@ -122,7 +121,7 @@ begin
     AJump.JumpSafe := Merge.JumpSafe;
 end;
 
-procedure RunCode(Compiler:TObject; Code: PByte; var DoContinue: TInitBool; InitialVarStack: TByteArray = nil; InitialJump: TCodePos = 0);
+procedure RunCode(Compiler:TObject; Code: PByte; InitialVarStack: TByteArray = nil; InitialJump: TCodePos = 0);
 const
   opNone: opCodeType = opCodeType(ocNone);
 var
@@ -522,15 +521,15 @@ var
     GoBack := False;
 
     try
-      while (DoContinue = bTrue) do {$I includes/lpinterpreter_opcodecase.inc}
+      while (TLapeCompiler(Compiler).DoContinue = bTrue) do {$I includes/lpinterpreter_opcodecase.inc}
     except
+
       {$IFDEF Lape_EmitPos}
       if (ExceptObject <> InJump.JumpException.Obj) then
         InJump.JumpException.Pos := PDocPos(PtrUInt(Code) + SizeOf(opCodeType));
       {$ENDIF}
 
       InJump.JumpException.Obj := Exception(AcquireExceptionObject());
-{$IFDEF MODERNPASCAL}
 // Ozz:
       ExceptionErrorMessage(ExceptObject,ExceptAddr,eMsg,eSize);
       With TLapeCompiler(Compiler) do begin
@@ -587,19 +586,20 @@ var
          Else If (ExceptionClassName='EUpdateError') then ExceptionType:=44
          Else ExceptionType:=41;
       End;
-{$ENDIF}
+      //System.Writeln('   Exception(ExceptObject).Message: ',Exception(ExceptObject).Message);
       HandleException();
+	ReleaseExceptionObject(); // releases ExceptionObject - avoid memory leak!
       GoBack := True;
     end;
 
-    if (DoContinue = bUnknown) then
+    if (TLapeCompiler(Compiler).DoContinue = bUnknown) then
     begin
       Sleep(1);
       goto Start;
     end
-    else if (DoContinue = bFalse) then
+    else if (TLapeCompiler(Compiler).DoContinue = bFalse) then
     begin
-      DoContinue := bTrue;
+      TLapeCompiler(Compiler).DoContinue := bTrue;
       InJump.JumpSafe := PByte(PtrUInt(CodeBase) + EndJump);
       HandleSafeJump();
       goto Start;
@@ -634,20 +634,14 @@ begin
     Code := PByte(PtrUInt(CodeBase) + InitialJump);
     DaLoop();
   except
-    on E: Exception do
-      if (E = InJump.JumpException.Obj) and (InJump.JumpException.Pos <> nil) then
-        LapeExceptionFmt(lpeRuntime, [E.Message], InJump.JumpException.Pos^)
-      else
-        LapeExceptionFmt(lpeRuntime, [E.Message]);
-  end;
-end;
 
-procedure RunCode(Compiler:TObject; Code: PByte; InitialVarStack: TByteArray = nil; InitialJump: TCodePos = 0);
-var
-  DoContinue: TInitBool;
-begin
-  DoContinue := bTrue;
-  RunCode(Compiler, Code, DoContinue, InitialVarStack, InitialJump);
+    on E: Exception do begin
+      if (E = InJump.JumpException.Obj) and (InJump.JumpException.Pos <> nil) then
+        LapeExceptionFmt(lpeRuntime, [TLapeCompiler(Compiler).ExceptionMessage], InJump.JumpException.Pos^)
+      else
+        LapeExceptionFmt(lpeRuntime, [TLapeCompiler(Compiler).ExceptionMessage]);
+    end;
+  end;
 end;
 
 end.
